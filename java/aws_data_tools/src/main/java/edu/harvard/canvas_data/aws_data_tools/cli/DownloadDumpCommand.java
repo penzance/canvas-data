@@ -20,7 +20,8 @@ public class DownloadDumpCommand implements Command {
   private static final Logger log = Logger.getLogger(DownloadDumpCommand.class);
 
   @Override
-  public ReturnStatus execute(final Configuration config) throws IOException, DataConfigurationException, UnexpectedApiResponseException {
+  public ReturnStatus execute(final Configuration config)
+      throws IOException, DataConfigurationException, UnexpectedApiResponseException {
     final AwsUtils aws = new AwsUtils();
     final DumpManager manager = new DumpManager(config, aws);
     final CanvasApiClient api = new DataClient().getCanvasApiClient(config.getCanvasDataHost(),
@@ -30,8 +31,12 @@ public class DownloadDumpCommand implements Command {
         final CanvasDataDump fullDump = api.getDump(dump.getDumpId());
         final CanvasDataSchema schema = api.getSchema(fullDump.getSchemaVersion());
         log.info("Saving " + fullDump.getSequence());
-        final DumpInformation dumpInfo = manager.saveDump(api, fullDump);
-        manager.archiveDump(fullDump, dumpInfo, schema);
+        try {
+          final DumpInformation dumpInfo = manager.saveDump(api, fullDump);
+          manager.archiveDump(fullDump, dumpInfo, schema);
+        } finally {
+          manager.deleteTemporaryDump(fullDump);
+        }
         break;
       }
     }

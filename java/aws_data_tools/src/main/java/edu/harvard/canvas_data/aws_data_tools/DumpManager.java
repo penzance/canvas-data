@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 import com.amazonaws.services.s3.model.S3ObjectId;
@@ -111,6 +112,11 @@ public class DumpManager {
     }
     aws.writeJson(AwsUtils.key(archiveObj, "schema.json"), schema);
     aws.writeJson(DumpInformation.getKey(archiveObj), dumpInfo);
+  }
+
+  public void deleteTemporaryDump(final CanvasDataDump dump) throws IOException {
+    final File directory = getScratchDumpDir(dump);
+    FileUtils.deleteDirectory(directory);
   }
 
   private File getScratchDumpDir(final CanvasDataDump dump) {

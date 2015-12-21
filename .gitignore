@@ -7,5 +7,6 @@ test-data
 .settings
 target
 secure.properties
+dependency-reduced-pom.xml
 
 Scratch.java
