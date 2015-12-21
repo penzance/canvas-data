@@ -1,1 +1,11 @@
 test-data
+
+*~
+
+.classpath
+.project
+.settings
+target
+secure.properties
+
+Scratch.java
