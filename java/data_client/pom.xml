@@ -24,9 +24,19 @@
 			<version>4.5.1</version>
 		</dependency>
     <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.5</version>
+    </dependency>
+    <dependency>
       <groupId>net.sf.uadetector</groupId>
       <artifactId>uadetector-resources</artifactId>
       <version>2014.04</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-s3</artifactId>
+      <version>1.10.44</version>
     </dependency>
 	</dependencies>
 

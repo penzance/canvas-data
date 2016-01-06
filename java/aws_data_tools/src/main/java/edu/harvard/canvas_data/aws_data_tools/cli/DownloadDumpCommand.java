@@ -2,12 +2,13 @@ package edu.harvard.canvas_data.aws_data_tools.cli;
 
 import java.io.IOException;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import edu.harvard.canvas_data.aws_data_tools.AwsUtils;
 import edu.harvard.canvas_data.aws_data_tools.DataConfiguration;
 import edu.harvard.canvas_data.aws_data_tools.DumpInformation;
 import edu.harvard.canvas_data.aws_data_tools.DumpManager;
+import edu.harvard.data.client.AwsUtils;
 import edu.harvard.data.client.DataClient;
 import edu.harvard.data.client.DataConfigurationException;
 import edu.harvard.data.client.canvas.api.CanvasApiClient;
@@ -17,7 +18,7 @@ import edu.harvard.data.client.canvas.api.UnexpectedApiResponseException;
 
 public class DownloadDumpCommand implements Command {
 
-  private static final Logger log = Logger.getLogger(DownloadDumpCommand.class);
+  private static final Logger log = LogManager.getLogger();
 
   @Override
   public ReturnStatus execute(final DataConfiguration config)

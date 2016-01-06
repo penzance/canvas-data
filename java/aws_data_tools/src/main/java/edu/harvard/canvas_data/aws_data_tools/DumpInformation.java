@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import edu.harvard.data.client.AwsUtils;
 import edu.harvard.data.client.canvas.api.CanvasDataDump;
 
 public class DumpInformation {

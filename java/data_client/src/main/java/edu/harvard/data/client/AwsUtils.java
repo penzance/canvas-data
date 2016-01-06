@@ -1,4 +1,4 @@
-package edu.harvard.canvas_data.aws_data_tools;
+package edu.harvard.data.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -6,7 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -22,7 +23,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class AwsUtils {
 
-  private static final Logger log = Logger.getLogger(AwsUtils.class);
+  private static final Logger log = LogManager.getLogger();
 
   private final AmazonS3Client client;
   private final ObjectMapper jsonMapper;

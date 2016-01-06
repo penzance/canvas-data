@@ -2,7 +2,8 @@ package edu.harvard.canvas_data.aws_data_tools.cli;
 
 import java.io.IOException;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -17,7 +18,7 @@ import edu.harvard.data.client.canvas.api.UnexpectedApiResponseException;
 
 public class CanvasDataCli {
 
-  private static final Logger log = Logger.getLogger(CanvasDataCli.class);
+  private static final Logger log = LogManager.getLogger();
 
   @Argument(handler = SubCommandHandler.class, usage = "Top-level command.")
   @SubCommands({ @SubCommand(name = "download", impl = DownloadDumpCommand.class),
