@@ -10,14 +10,14 @@ import org.kohsuke.args4j.spi.SubCommand;
 import org.kohsuke.args4j.spi.SubCommandHandler;
 import org.kohsuke.args4j.spi.SubCommands;
 
-import edu.harvard.canvas_data.aws_data_tools.Configuration;
+import edu.harvard.canvas_data.aws_data_tools.DataConfiguration;
 import edu.harvard.canvas_data.aws_data_tools.FatalError;
 import edu.harvard.data.client.DataConfigurationException;
 import edu.harvard.data.client.canvas.api.UnexpectedApiResponseException;
 
 public class CanvasDataCli {
 
-  private static final Logger log = Logger.getLogger("Canvas Data");
+  private static final Logger log = Logger.getLogger(CanvasDataCli.class);
 
   @Argument(handler = SubCommandHandler.class, usage = "Top-level command.")
   @SubCommands({ @SubCommand(name = "download", impl = DownloadDumpCommand.class),
@@ -30,14 +30,14 @@ public class CanvasDataCli {
     try {
       cli.parseArgument(args);
     } catch (final CmdLineException e) {
-      System.exit(ReturnStatus.ARGUMENT_ERROR.ordinal());
+      System.exit(ReturnStatus.ARGUMENT_ERROR.getCode());
     }
     if (parser.cmd == null) {
-      System.exit(ReturnStatus.ARGUMENT_ERROR.ordinal());
+      System.exit(ReturnStatus.ARGUMENT_ERROR.getCode());
     } else {
-      Configuration config = null; // Config is set or System.exit is called.
+      DataConfiguration config = null; // Config is set or System.exit is called.
       try {
-        config = Configuration.getConfiguration("secure.properties");
+        config = DataConfiguration.getConfiguration("secure.properties");
       } catch (final DataConfigurationException e) {
         log.fatal("Invalid configuration. Field", e);
         System.exit(ReturnStatus.CONFIG_ERROR.getCode());

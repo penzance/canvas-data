@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.kohsuke.args4j.Argument;
 
-import edu.harvard.canvas_data.aws_data_tools.Configuration;
+import edu.harvard.canvas_data.aws_data_tools.DataConfiguration;
 import edu.harvard.data.client.DataClient;
 import edu.harvard.data.client.DataConfigurationException;
 import edu.harvard.data.client.canvas.api.CanvasApiClient;
@@ -23,7 +23,7 @@ public class CompareSchemasCommand implements Command {
   private String newVersion;
 
   @Override
-  public ReturnStatus execute(final Configuration config) throws IOException, DataConfigurationException, UnexpectedApiResponseException {
+  public ReturnStatus execute(final DataConfiguration config) throws IOException, DataConfigurationException, UnexpectedApiResponseException {
     final CanvasApiClient api = new DataClient().getCanvasApiClient(config.getCanvasDataHost(),
         config.getCanvasApiKey(), config.getCanvasApiSecret());
     final CanvasDataSchema schema1 = api.getSchema(oldVersion);

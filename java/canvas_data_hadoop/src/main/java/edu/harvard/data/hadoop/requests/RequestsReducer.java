@@ -41,7 +41,7 @@ public class RequestsReducer extends Reducer<LongWritable, ExpandedRequest, Long
         printer.printRecord(request.getFieldsAsList(format));
       }
       final LongWritable timestamp = new LongWritable(request.getTimestamp());
-      final Text csvText = new Text(writer.toString());
+      final Text csvText = new Text(writer.toString().trim());
       context.write(timestamp, csvText);
       if (request.getUserId() != null && request.getUserId() == 134926641248969922L) {
         outputs.write("tlttools", timestamp, csvText);

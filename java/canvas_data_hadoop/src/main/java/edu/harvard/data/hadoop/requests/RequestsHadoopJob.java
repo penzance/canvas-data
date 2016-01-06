@@ -14,11 +14,13 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class RequestsHadoopJob {
+
   public static void main(final String[] args)
       throws IOException, ClassNotFoundException, InterruptedException {
     if (args.length != 2) {
       System.err.println("Usage: s3://path/to/data/file s3://output/directory");
     }
+
 
     final Configuration conf = new Configuration();
 

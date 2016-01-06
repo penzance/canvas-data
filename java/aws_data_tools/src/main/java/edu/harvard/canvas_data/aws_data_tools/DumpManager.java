@@ -25,10 +25,10 @@ public class DumpManager {
 
   private static final Logger log = Logger.getLogger(DumpManager.class);
 
-  private final Configuration config;
+  private final DataConfiguration config;
   private final AwsUtils aws;
 
-  public DumpManager(final Configuration config, final AwsUtils aws) {
+  public DumpManager(final DataConfiguration config, final AwsUtils aws) {
     this.config = config;
     this.aws = aws;
   }
@@ -86,30 +86,26 @@ public class DumpManager {
         }
         final String filename = artifact.getTableName() + "-" + String.format("%05d", fileIndex++)
         + ".gz";
-        refreshedFile.download(new File(tableDir, filename));
+        final File downloadFile = new File(tableDir, filename);
+        refreshedFile.download(downloadFile);
+        archiveFile(dump, table, downloadFile);
       }
     }
     final Date downloadEnd = new Date();
     return new DumpInformation(dump, downloadStart, downloadEnd);
   }
 
-  public void archiveDump(final CanvasDataDump dump, final DumpInformation dumpInfo,
-      final CanvasDataSchema schema) throws IOException {
-    final File directory = getScratchDumpDir(dump);
+  public void archiveFile(final CanvasDataDump dump, final String table, final File downloadFile) {
     final S3ObjectId archiveObj = getArchiveDumpObj(dump);
-    log.info("Archiving " + directory + " to " + archiveObj);
+    final S3ObjectId infoObj = AwsUtils.key(archiveObj, table, downloadFile.getName());
+    aws.getClient().putObject(infoObj.getBucket(), infoObj.getKey(), downloadFile);
+    log.info("Uploaded " + downloadFile + " to " + infoObj);
+    downloadFile.delete();
+  }
 
-    for (final String table : directory.list()) {
-      final File tableDir = new File(directory, table);
-      if (tableDir.isDirectory()) {
-        for (final String file : tableDir.list()) {
-          final File dataFile = new File(tableDir, file);
-          final S3ObjectId infoObj = AwsUtils.key(archiveObj, table, file);
-          aws.getClient().putObject(infoObj.getBucket(), infoObj.getKey(), dataFile);
-          log.info("Uploaded " + dataFile + " to " + infoObj);
-        }
-      }
-    }
+  public void finalizeDump(final CanvasDataDump dump, final DumpInformation dumpInfo,
+      final CanvasDataSchema schema) throws IOException {
+    final S3ObjectId archiveObj = getArchiveDumpObj(dump);
     aws.writeJson(AwsUtils.key(archiveObj, "schema.json"), schema);
     aws.writeJson(DumpInformation.getKey(archiveObj), dumpInfo);
   }

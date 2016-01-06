@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -27,7 +28,11 @@ public class AwsUtils {
   private final ObjectMapper jsonMapper;
 
   public AwsUtils() {
-    this.client = new AmazonS3Client(new ProfileCredentialsProvider());
+    this(new ProfileCredentialsProvider());
+  }
+
+  public AwsUtils(final AWSCredentialsProvider provider) {
+    this.client = new AmazonS3Client(provider);
     this.jsonMapper = new ObjectMapper();
     this.jsonMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ"));
     this.jsonMapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -47,14 +52,22 @@ public class AwsUtils {
     log.debug("Listing keys for " + obj);
     ObjectListing objects = client.listObjects(obj.getBucket(), obj.getKey());
     final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>();
-    while (objects.isTruncated()) {
+    do {
       for (final S3ObjectSummary objectSummary : objects.getObjectSummaries()) {
         summaries.add(objectSummary);
         log.debug("  key: " + objectSummary.getKey());
       }
       objects = client.listNextBatchOfObjects(objects);
-    }
+    } while (objects.isTruncated());
     return summaries;
+  }
+
+  public static String uri(final S3ObjectId obj) {
+    return "s3://" + obj.getBucket() + "/" + obj.getKey();
+  }
+
+  public static String uri(final S3ObjectSummary obj) {
+    return "s3://" + obj.getBucketName() + "/" + obj.getKey();
   }
 
   public static S3ObjectId key(final String bucket, final String... keys) {

@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import edu.harvard.canvas_data.aws_data_tools.AwsUtils;
-import edu.harvard.canvas_data.aws_data_tools.Configuration;
+import edu.harvard.canvas_data.aws_data_tools.DataConfiguration;
 import edu.harvard.canvas_data.aws_data_tools.DumpInformation;
 import edu.harvard.canvas_data.aws_data_tools.DumpManager;
 import edu.harvard.data.client.DataClient;
@@ -20,7 +20,7 @@ public class DownloadDumpCommand implements Command {
   private static final Logger log = Logger.getLogger(DownloadDumpCommand.class);
 
   @Override
-  public ReturnStatus execute(final Configuration config)
+  public ReturnStatus execute(final DataConfiguration config)
       throws IOException, DataConfigurationException, UnexpectedApiResponseException {
     final AwsUtils aws = new AwsUtils();
     final DumpManager manager = new DumpManager(config, aws);
@@ -31,13 +31,15 @@ public class DownloadDumpCommand implements Command {
         final CanvasDataDump fullDump = api.getDump(dump.getDumpId());
         final CanvasDataSchema schema = api.getSchema(fullDump.getSchemaVersion());
         log.info("Saving " + fullDump.getSequence());
+        final long start = System.currentTimeMillis();
         try {
           final DumpInformation dumpInfo = manager.saveDump(api, fullDump);
-          manager.archiveDump(fullDump, dumpInfo, schema);
+          manager.finalizeDump(fullDump, dumpInfo, schema);
         } finally {
           manager.deleteTemporaryDump(fullDump);
         }
-        break;
+        final long time = (System.currentTimeMillis() - start)/1000;
+        log.info("Downloaded and archived dump " + fullDump.getSequence() + " in " + time + " seconds");
       }
     }
     return ReturnStatus.OK;
