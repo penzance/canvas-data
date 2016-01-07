@@ -6,9 +6,9 @@ import java.util.Map;
 
 public interface DataSetReader extends Closeable {
 
-  Map<String, TableReader<? extends DataTable>> getTables();
+  Map<String, TableReader<? extends DataTable>> getTables() throws IOException;
 
-  <T extends DataTable> TableReader<T> getTable(String tableName, Class<T> tableClass);
+  <T extends DataTable> TableReader<T> getTable(String tableName, Class<T> tableClass) throws IOException;
 
   TableFormat getFormat();
 

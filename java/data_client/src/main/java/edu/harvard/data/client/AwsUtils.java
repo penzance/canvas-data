@@ -1,11 +1,18 @@
 package edu.harvard.data.client;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,6 +20,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
@@ -63,6 +71,24 @@ public class AwsUtils {
     return summaries;
   }
 
+  public Set<S3ObjectId> listDirectories(final S3ObjectId obj) {
+    log.debug("Listing directories for " + obj);
+    final String prefix = obj.getKey() + "/";
+    ObjectListing objects = client.listObjects(obj.getBucket(), prefix);
+    final Set<S3ObjectId> dirs = new HashSet<S3ObjectId>();
+    do {
+      for (final S3ObjectSummary objectSummary : objects.getObjectSummaries()) {
+        final String subKey = objectSummary.getKey().substring(prefix.length());
+        final String[] keyParts = subKey.split("/");
+        if (keyParts.length == 2) {
+          dirs.add(key(obj, keyParts[0]));
+        }
+      }
+      objects = client.listNextBatchOfObjects(objects);
+    } while (objects.isTruncated());
+    return dirs;
+  }
+
   public static String uri(final S3ObjectId obj) {
     return "s3://" + obj.getBucket() + "/" + obj.getKey();
   }
@@ -108,6 +134,14 @@ public class AwsUtils {
     metadata.setContentLength(bytes.length);
 
     client.putObject(obj.getBucket(), obj.getKey(), new ByteArrayInputStream(bytes), metadata);
+  }
+
+  public void getFile(final S3ObjectId objId, final File tempFile) throws IOException {
+    final S3Object obj = client.getObject(new GetObjectRequest(objId.getBucket(), objId.getKey()));
+    tempFile.getParentFile().mkdirs();
+    final InputStream in = obj.getObjectContent();
+    final OutputStream out = new FileOutputStream(tempFile);
+    IOUtils.copy(in, out);
   }
 
 }

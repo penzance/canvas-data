@@ -1,14 +1,14 @@
 package edu.harvard.data.client;
 
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 
@@ -17,18 +17,18 @@ import org.apache.commons.csv.CSVRecord;
 
 public class DelimitedTableReader<T extends DataTable> implements TableReader<T> {
   private final TableFormat format;
-  private final Path file;
+  private final File file;
   private DelimitedFileIterator<T> iterator;
   private final Class<T> tableType;
   private final String tableName;
 
-  public DelimitedTableReader(final Class<T> tableType, final TableFormat format, final Path file,
+  public DelimitedTableReader(final Class<T> tableType, final TableFormat format, final File file,
       final String tableName) throws IOException {
     this.format = format;
     this.file = file;
     this.tableType = tableType;
     this.tableName = tableName;
-    if (!Files.exists(file) || Files.isDirectory(file)) {
+    if (!file.exists() || file.isDirectory()) {
       throw new FileNotFoundException(file.toString());
     }
     reset();
@@ -71,9 +71,9 @@ public class DelimitedTableReader<T extends DataTable> implements TableReader<T>
   InputStream getInputStream() throws IOException {
     switch (format.getCompression()) {
     case Gzip:
-      return new GZIPInputStream(Files.newInputStream(file));
+      return new GZIPInputStream(new FileInputStream(file));
     case None:
-      return Files.newInputStream(file);
+      return new FileInputStream(file);
     default:
       throw new RuntimeException("Unknown compression format: " + format.getCompression());
     }
@@ -94,11 +94,11 @@ class DelimitedFileIterator<T extends DataTable> implements Iterator<T>, Closeab
   private CSVParser requestParser;
   private final Class<T> table;
   private final TableFormat format;
-  private final Path file;
+  private final File file;
   private int line;
   private final DelimitedTableReader<T> parent;
 
-  public DelimitedFileIterator(final Class<T> table, final TableFormat format, final Path file,
+  public DelimitedFileIterator(final Class<T> table, final TableFormat format, final File file,
       final DelimitedTableReader<T> parent) throws IOException {
     this.format = format;
     this.table = table;

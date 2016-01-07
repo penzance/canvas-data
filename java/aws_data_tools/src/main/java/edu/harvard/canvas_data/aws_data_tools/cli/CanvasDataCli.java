@@ -22,6 +22,7 @@ public class CanvasDataCli {
 
   @Argument(handler = SubCommandHandler.class, usage = "Top-level command.")
   @SubCommands({ @SubCommand(name = "download", impl = DownloadDumpCommand.class),
+    @SubCommand(name = "verify", impl = VerifyDumpCommand.class),
     @SubCommand(name = "compareschemas", impl = CompareSchemasCommand.class), })
   public Command cmd;
 
@@ -36,7 +37,8 @@ public class CanvasDataCli {
     if (parser.cmd == null) {
       System.exit(ReturnStatus.ARGUMENT_ERROR.getCode());
     } else {
-      DataConfiguration config = null; // Config is set or System.exit is called.
+      DataConfiguration config = null; // Config is set or System.exit is
+      // called.
       try {
         config = DataConfiguration.getConfiguration("secure.properties");
       } catch (final DataConfigurationException e) {

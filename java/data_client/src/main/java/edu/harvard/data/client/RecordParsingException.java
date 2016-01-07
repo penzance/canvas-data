@@ -1,6 +1,6 @@
 package edu.harvard.data.client;
 
-import java.nio.file.Path;
+import java.io.File;
 
 import org.apache.commons.csv.CSVRecord;
 
@@ -8,10 +8,10 @@ public class RecordParsingException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
   private final CSVRecord record;
-  private final Path file;
+  private final File file;
   private final int line;
 
-  public RecordParsingException(final Path file, final int line, final CSVRecord record, final Throwable error) {
+  public RecordParsingException(final File file, final int line, final CSVRecord record, final Throwable error) {
     super(error);
     this.record = record;
     this.file = file;
@@ -22,7 +22,7 @@ public class RecordParsingException extends RuntimeException {
     return record;
   }
 
-  public Path getFile() {
+  public File getFile() {
     return file;
   }
 

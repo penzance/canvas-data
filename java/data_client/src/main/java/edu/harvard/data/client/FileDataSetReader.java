@@ -30,7 +30,7 @@ public class FileDataSetReader implements DataSetReader {
           try (DirectoryStream<Path> childListing = Files.newDirectoryStream(child)) {
             for (final Path dataFile : childListing) {
               final TableReader<? extends DataTable> table = factory.getDelimitedTableReader(tableName,
-                  format, dataFile);
+                  format, dataFile.toFile());
               if (table != null) {
                 tableReaders.add(table);
               }

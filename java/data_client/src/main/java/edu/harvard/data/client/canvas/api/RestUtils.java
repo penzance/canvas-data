@@ -75,10 +75,6 @@ public class RestUtils {
 
     final String message = method + "\n" + hostHeader + "\n" + contentTypeHeader + "\n" + md5Header
         + "\n" + resourcePath + "\n" + queryParams + "\n" + date + "\n" + secret;
-    // final StringJoiner joiner = new StringJoiner("\n");
-    // joiner.add(method).add(hostHeader).add(contentTypeHeader).add(md5Header);
-    // joiner.add(resourcePath).add(queryParams).add(date).add(secret);
-    // final String message = joiner.toString();
 
     final Mac hmac;
     try {
@@ -93,7 +89,6 @@ public class RestUtils {
       throw new DataConfigurationException(e);
     }
     final byte[] digest = hmac.doFinal(message.getBytes());
-    //  return Base64.getEncoder().encodeToString(digest);
     return Base64.encodeBase64String(digest);
   }
 
