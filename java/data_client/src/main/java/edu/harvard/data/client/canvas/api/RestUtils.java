@@ -19,6 +19,8 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +28,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.harvard.data.client.DataConfigurationException;
 
 public class RestUtils {
+
+  private static final Logger log = LogManager.getLogger();
 
   private final String host;
   private final String key;
@@ -41,6 +45,7 @@ public class RestUtils {
 
   public <T> T makeApiCall(final String resourcePath, final int expectedStatus, final JavaType type)
       throws DataConfigurationException, UnexpectedApiResponseException, IOException {
+    log.debug("Making Canvas API call to " + resourcePath);
     final String date = getDate();
     final String signature = generateSignature(resourcePath, date);
     final String url = "https://" + host + resourcePath;
@@ -51,6 +56,10 @@ public class RestUtils {
         final CloseableHttpResponse response = httpClient.execute(get);) {
       final int status = response.getStatusLine().getStatusCode();
       if (status != expectedStatus) {
+        log.warn("Unexpected REST API response: " + status);
+        final String responseValue = mapper.readValue(response.getEntity().getContent(),
+            String.class);
+        log.warn(responseValue);
         throw new UnexpectedApiResponseException(expectedStatus, status, url);
       }
       return mapper.readValue(response.getEntity().getContent(), type);
@@ -102,8 +111,13 @@ public class RestUtils {
           final CloseableHttpResponse response = httpClient.execute(get);
           final FileOutputStream out = new FileOutputStream(dest.toString());) {
         final HttpEntity entity = response.getEntity();
+        final long contentLength = response.getEntity().getContentLength();
         if (entity != null) {
           entity.writeTo(out);
+        }
+        if (dest.length() != contentLength) {
+          throw new IOException("Downloaded incomplete file. Expected " + contentLength
+              + " bytes, got " + dest.length());
         }
         return;
       } catch (final java.io.IOException e) {

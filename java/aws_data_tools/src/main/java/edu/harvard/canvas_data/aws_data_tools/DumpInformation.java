@@ -27,15 +27,18 @@ public class DumpInformation {
   private final CanvasDataDump dump;
   private final Date downloadStart;
   private final Date downloadComplete;
+  private boolean verified;
 
   @JsonCreator
   public DumpInformation(
       @JsonProperty("dump") final CanvasDataDump dump,
       @JsonProperty("downloadStart") final Date downloadStart,
-      @JsonProperty("downloadComplete") final Date downloadComplete) {
+      @JsonProperty("downloadComplete") final Date downloadComplete,
+      @JsonProperty("verified") final boolean verified) {
     this.dump = dump;
     this.downloadStart = downloadStart;
     this.downloadComplete = downloadComplete;
+    this.verified = verified;
   }
 
   public CanvasDataDump getDump() {
@@ -48,6 +51,14 @@ public class DumpInformation {
 
   public Date getDownloadComplete() {
     return downloadComplete;
+  }
+
+  public boolean getVerified() {
+    return verified;
+  }
+
+  public void setVerified(final boolean verified) {
+    this.verified = verified;
   }
 
   public static File getFile(final File dir) {

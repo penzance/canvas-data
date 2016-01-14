@@ -1,10 +1,9 @@
 package edu.harvard.data.client;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -120,12 +119,12 @@ public class TableFormat {
     return "";
   }
 
-  public OutputStream getOutputStream(final Path file, final StandardOpenOption... opts) throws IOException {
+  public OutputStream getOutputStream(final File file) throws IOException {
     switch (compression) {
     case Gzip:
-      return new GZIPOutputStream(Files.newOutputStream(file, opts));
+      return new GZIPOutputStream(new FileOutputStream(file));
     case None:
-      return Files.newOutputStream(file, opts);
+      return new FileOutputStream(file);
     default:
       throw new RuntimeException("Unknown compression: " + compression);
     }

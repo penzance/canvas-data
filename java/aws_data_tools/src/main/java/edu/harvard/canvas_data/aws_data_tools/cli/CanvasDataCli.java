@@ -23,6 +23,7 @@ public class CanvasDataCli {
   @Argument(handler = SubCommandHandler.class, usage = "Top-level command.")
   @SubCommands({ @SubCommand(name = "download", impl = DownloadDumpCommand.class),
     @SubCommand(name = "verify", impl = VerifyDumpCommand.class),
+    @SubCommand(name = "javasdk", impl = GenerateJavaSdkCommand.class),
     @SubCommand(name = "compareschemas", impl = CompareSchemasCommand.class), })
   public Command cmd;
 

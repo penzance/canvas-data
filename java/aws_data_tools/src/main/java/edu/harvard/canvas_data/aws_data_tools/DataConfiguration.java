@@ -6,22 +6,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.model.S3ObjectId;
 
 import edu.harvard.data.client.DataConfigurationException;
 
-public class DataConfiguration implements AWSCredentialsProvider {
+public class DataConfiguration {
 
   private String canvasApiKey;
   private String canvasApiSecret;
   private String canvasDataHost;
   private File scratchDir;
   private S3ObjectId canvasDataArchiveKey;
-  private String awsKey;
-  private String awsSecretKey;
+  //  private String awsKey;
+  //  private String awsSecretKey;
 
   public static DataConfiguration getConfiguration(final String propertiesFileName)
       throws IOException, DataConfigurationException {
@@ -42,8 +39,8 @@ public class DataConfiguration implements AWSCredentialsProvider {
     final String dataBucket = getConfigParameter(properties, "canvas_data_bucket");
     config.canvasDataArchiveKey = new S3ObjectId(dataBucket,
         getConfigParameter(properties, "canvas_data_archive_key"));
-    config.awsKey = getConfigParameter(properties, "aws_access_key_id");
-    config.awsSecretKey = getConfigParameter(properties, "aws_secret_access_key");
+    //    config.awsKey = getConfigParameter(properties, "aws_access_key_id");
+    //    config.awsSecretKey = getConfigParameter(properties, "aws_secret_access_key");
     return config;
   }
 
@@ -79,12 +76,12 @@ public class DataConfiguration implements AWSCredentialsProvider {
     return canvasDataArchiveKey;
   }
 
-  @Override
-  public AWSCredentials getCredentials() {
-    return new BasicAWSCredentials(awsKey, awsSecretKey);
-  }
-
-  @Override
-  public void refresh() {
-  }
+  //  @Override
+  //  public AWSCredentials getCredentials() {
+  //    return new BasicAWSCredentials(awsKey, awsSecretKey);
+  //  }
+  //
+  //  @Override
+  //  public void refresh() {
+  //  }
 }

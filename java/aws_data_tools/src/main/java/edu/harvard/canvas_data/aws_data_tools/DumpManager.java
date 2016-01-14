@@ -94,7 +94,7 @@ public class DumpManager {
       }
     }
     final Date downloadEnd = new Date();
-    return new DumpInformation(dump, downloadStart, downloadEnd);
+    return new DumpInformation(dump, downloadStart, downloadEnd, false);
   }
 
   public void archiveFile(final CanvasDataDump dump, final String table, final File downloadFile) {
@@ -105,11 +105,12 @@ public class DumpManager {
     downloadFile.delete();
   }
 
-  public void finalizeDump(final CanvasDataDump dump, final DumpInformation dumpInfo,
+  public S3ObjectId finalizeDump(final CanvasDataDump dump, final DumpInformation dumpInfo,
       final CanvasDataSchema schema) throws IOException {
     final S3ObjectId archiveObj = getArchiveDumpObj(dump);
     aws.writeJson(AwsUtils.key(archiveObj, "schema.json"), schema);
     aws.writeJson(DumpInformation.getKey(archiveObj), dumpInfo);
+    return archiveObj;
   }
 
   public void deleteTemporaryDump(final CanvasDataDump dump) throws IOException {

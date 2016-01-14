@@ -27,8 +27,8 @@ public class CanvasDataSchema {
     return schema;
   }
 
-  public void calculateDifferences(final CanvasDataSchema schema2,
-      final List<SchemaDifference> differences) {
+  public List<SchemaDifference> calculateDifferences(final CanvasDataSchema schema2) {
+    final List<SchemaDifference> differences = new ArrayList<SchemaDifference>();
     final List<String> tableKeys = new ArrayList<String>(schema.keySet());
     Collections.sort(tableKeys);
     for (final String tableKey : tableKeys) {
@@ -48,6 +48,7 @@ public class CanvasDataSchema {
         .add(new SchemaDifference("Added table " +  schema2.schema.get(key).getTableName()));
       }
     }
+    return differences;
   }
 
 }
