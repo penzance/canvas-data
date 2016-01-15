@@ -13,6 +13,7 @@ import org.kohsuke.args4j.spi.SubCommands;
 
 import edu.harvard.canvas_data.aws_data_tools.DataConfiguration;
 import edu.harvard.canvas_data.aws_data_tools.FatalError;
+import edu.harvard.canvas_data.aws_data_tools.VerificationException;
 import edu.harvard.data.client.DataConfigurationException;
 import edu.harvard.data.client.canvas.api.UnexpectedApiResponseException;
 
@@ -55,8 +56,11 @@ public class CanvasDataCli {
       } catch (final IOException e) {
         log.fatal("IO error: " + e.getMessage(), e);
         System.exit(ReturnStatus.IO_ERROR.getCode());
+      } catch (final VerificationException e) {
+        log.fatal("Verification error: " + e.getMessage(), e);
+        System.exit(ReturnStatus.VERIFICATION_FAILURE.getCode());
       } catch (final IllegalArgumentException e) {
-        log.fatal(e.getMessage());
+        log.fatal(e.getMessage(), e);
         System.exit(ReturnStatus.ARGUMENT_ERROR.getCode());
       } catch (final UnexpectedApiResponseException e) {
         log.fatal("API error: " + e.getMessage(), e);

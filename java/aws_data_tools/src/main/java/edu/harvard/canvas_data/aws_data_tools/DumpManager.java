@@ -36,17 +36,13 @@ public class DumpManager {
   }
 
   public boolean needToSaveDump(final CanvasDataDump dump) throws IOException {
-    final String dirName = String.format("%05d", dump.getSequence());
-    final S3ObjectId archiveObj = AwsUtils.key(config.getCanvasDataArchiveKey(), dirName);
-    final S3ObjectId dumpInfoObj = DumpInformation.getKey(archiveObj);
-    if (!aws.isFile(AwsUtils.key(dumpInfoObj))) {
-      log.info("Dump needs to be saved; dump info file " + dumpInfoObj + " does not exist.");
+    final DumpInfo info = DumpInfo.find(dump.getDumpId());
+    if (info == null) {
+      log.info("Dump needs to be saved; no dump info record for " + dump.getDumpId());
       return true;
     }
-    final DumpInformation info = DumpInformation.read(aws, dumpInfoObj);
-    if (info.getDownloadComplete() == null) {
-      log.info("Dump needs to be saved; previous download to " + archiveObj.getKey()
-      + " did not complete.");
+    if (info.getDownloaded() == null || !info.getDownloaded()) {
+      log.info("Dump needs to be saved; previous download did not complete.");
       return true;
     }
     final Date downloadStart = info.getDownloadStart();
@@ -54,22 +50,24 @@ public class DumpManager {
     // downloaded before.
     final Date conservativeStart = new Date(downloadStart.getTime() - (60 * 60 * 1000));
     if (conservativeStart.before(dump.getUpdatedAt())) {
-      log.info("Dump needs to be saved; downloaded to " + archiveObj
-          + " less than an hour after it was last updated.");
+      log.info(
+          "Dump needs to be saved; previously downloaded less than an hour after it was last updated.");
       return true;
     }
-    log.info("Dump does not need to be saved; already exists at " + archiveObj + ".");
+    log.info("Dump does not need to be saved; already exists at " + info.getBucket() + "/"
+        + info.getKey() + ".");
     return false;
   }
 
-  public DumpInformation saveDump(final CanvasApiClient api, final CanvasDataDump dump)
-      throws IOException, UnexpectedApiResponseException, DataConfigurationException {
-    final Date downloadStart = new Date();
+  public void saveDump(final CanvasApiClient api, final CanvasDataDump dump, final DumpInfo info)
+      throws IOException, UnexpectedApiResponseException, DataConfigurationException, VerificationException {
+    info.setDownloadStart(new Date());
     final File directory = getScratchDumpDir(dump);
     final boolean created = directory.mkdirs();
     log.debug("Creating directory " + directory + ": " + created);
     final Map<String, CanvasDataArtifact> artifactsByTable = dump.getArtifactsByTable();
     final List<String> tables = new ArrayList<String>(artifactsByTable.keySet());
+    int downloadedFiles = 0;
     for (final String table : tables) {
       int fileIndex = 0;
       final File tableDir = new File(directory, table);
@@ -91,10 +89,14 @@ public class DumpManager {
         final File downloadFile = new File(tableDir, filename);
         refreshedFile.download(downloadFile);
         archiveFile(dump, table, downloadFile);
+        downloadedFiles++;
       }
     }
-    final Date downloadEnd = new Date();
-    return new DumpInformation(dump, downloadStart, downloadEnd, false);
+    if (downloadedFiles != dump.countFilesToDownload()) {
+      throw new VerificationException("Expected to download " + dump.getNumFiles()
+      + " files. Actually downloaded " + downloadedFiles);
+    }
+    info.setDownloadEnd(new Date());
   }
 
   public void archiveFile(final CanvasDataDump dump, final String table, final File downloadFile) {
@@ -105,11 +107,11 @@ public class DumpManager {
     downloadFile.delete();
   }
 
-  public S3ObjectId finalizeDump(final CanvasDataDump dump, final DumpInformation dumpInfo,
-      final CanvasDataSchema schema) throws IOException {
+  public S3ObjectId finalizeDump(final CanvasDataDump dump, final CanvasDataSchema schema)
+      throws IOException {
     final S3ObjectId archiveObj = getArchiveDumpObj(dump);
     aws.writeJson(AwsUtils.key(archiveObj, "schema.json"), schema);
-    aws.writeJson(DumpInformation.getKey(archiveObj), dumpInfo);
+    aws.writeJson(AwsUtils.key(archiveObj, "dump_info.json"), dump);
     return archiveObj;
   }
 

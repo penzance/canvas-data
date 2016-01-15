@@ -36,15 +36,14 @@ def download_and_verify():
     with open(RESULT_METADATA) as result_file:
         download_result = json.load(result_file)
 
-    download_bucket = download_result['AWS_BUCKET']
-    download_key = download_result['AWS_KEY']
+    dump_id = download_result['DUMP_ID']
 
-    status = run_command(['compareschemas', download_bucket, download_key, CURRENT_SCHEMA])
+    status = run_command(['compareschemas', dump_id, CURRENT_SCHEMA])
     if status != 0:
         bail('Failed on schema check')
         return status
 
-    status = run_command(['verify', download_bucket, download_key])
+    status = run_command(['verify', dump_id])
     if status != 0:
         bail('Failed to verify dump')
         return status

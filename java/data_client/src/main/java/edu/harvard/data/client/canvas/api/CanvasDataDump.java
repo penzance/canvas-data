@@ -112,4 +112,12 @@ public class CanvasDataDump {
     }
     return str;
   }
+
+  public int countFilesToDownload() {
+    int files = 0;
+    for (final CanvasDataArtifact artifact : artifactsByTable.values()) {
+      files += artifact.getFiles().size();
+    }
+    return files;
+  }
 }

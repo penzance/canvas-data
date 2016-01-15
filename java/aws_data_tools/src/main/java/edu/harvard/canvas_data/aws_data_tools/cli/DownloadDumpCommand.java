@@ -18,8 +18,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import edu.harvard.canvas_data.aws_data_tools.DataConfiguration;
-import edu.harvard.canvas_data.aws_data_tools.DumpInformation;
+import edu.harvard.canvas_data.aws_data_tools.DumpInfo;
 import edu.harvard.canvas_data.aws_data_tools.DumpManager;
+import edu.harvard.canvas_data.aws_data_tools.VerificationException;
 import edu.harvard.data.client.AwsUtils;
 import edu.harvard.data.client.DataClient;
 import edu.harvard.data.client.DataConfigurationException;
@@ -36,8 +37,8 @@ public class DownloadDumpCommand implements Command {
   private File output;
 
   @Override
-  public ReturnStatus execute(final DataConfiguration config)
-      throws IOException, DataConfigurationException, UnexpectedApiResponseException {
+  public ReturnStatus execute(final DataConfiguration config) throws IOException,
+  DataConfigurationException, UnexpectedApiResponseException, VerificationException {
     final AwsUtils aws = new AwsUtils();
     final DumpManager manager = new DumpManager(config, aws);
     final CanvasApiClient api = new DataClient().getCanvasApiClient(config.getCanvasDataHost(),
@@ -51,18 +52,26 @@ public class DownloadDumpCommand implements Command {
         final long start = System.currentTimeMillis();
         try {
           final Map<String, String> metadata = new HashMap<String, String>();
-          final DumpInformation dumpInfo = manager.saveDump(api, fullDump);
-          final S3ObjectId dumpLocation = manager.finalizeDump(fullDump, dumpInfo, schema);
+          final DumpInfo info = new DumpInfo(fullDump.getDumpId(), fullDump.getSequence(),
+              fullDump.getSchemaVersion());
+          info.save();
+          manager.saveDump(api, fullDump, info);
+          final S3ObjectId dumpLocation = manager.finalizeDump(fullDump, schema);
           metadata.put("AWS_BUCKET", dumpLocation.getBucket());
           metadata.put("AWS_KEY", dumpLocation.getKey());
           metadata.put("DUMP_ID", fullDump.getDumpId());
           metadata.put("DUMP_SEQUENCE", "" + fullDump.getSequence());
           writeMetadata(metadata);
+          info.setBucket(dumpLocation.getBucket());
+          info.setKey(dumpLocation.getKey());
+          info.setDownloaded(true);
+          info.save();
         } finally {
           manager.deleteTemporaryDump(fullDump);
         }
-        final long time = (System.currentTimeMillis() - start)/1000;
-        log.info("Downloaded and archived dump " + fullDump.getSequence() + " in " + time + " seconds");
+        final long time = (System.currentTimeMillis() - start) / 1000;
+        log.info(
+            "Downloaded and archived dump " + fullDump.getSequence() + " in " + time + " seconds");
         break;
       }
     }
@@ -71,7 +80,7 @@ public class DownloadDumpCommand implements Command {
 
   private List<CanvasDataDump> sortDumps(final List<CanvasDataDump> dumps) {
     final List<CanvasDataDump> sortedDumps = new ArrayList<CanvasDataDump>(dumps);
-    Collections.sort(sortedDumps, new Comparator<CanvasDataDump>(){
+    Collections.sort(sortedDumps, new Comparator<CanvasDataDump>() {
       @Override
       public int compare(final CanvasDataDump d1, final CanvasDataDump d2) {
         if (d1.getSequence() == d2.getSequence()) {

@@ -16,8 +16,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -37,11 +35,7 @@ public class AwsUtils {
   private final ObjectMapper jsonMapper;
 
   public AwsUtils() {
-    this(new ProfileCredentialsProvider());
-  }
-
-  public AwsUtils(final AWSCredentialsProvider provider) {
-    this.client = new AmazonS3Client(provider);
+    this.client = new AmazonS3Client();
     this.jsonMapper = new ObjectMapper();
     this.jsonMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ"));
     this.jsonMapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -142,6 +136,10 @@ public class AwsUtils {
     final InputStream in = obj.getObjectContent();
     final OutputStream out = new FileOutputStream(tempFile);
     IOUtils.copy(in, out);
+  }
+
+  public void deleteKey(final S3ObjectId key) {
+    client.deleteObject(key.getBucket(), key.getKey());
   }
 
 }
