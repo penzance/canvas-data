@@ -11,7 +11,7 @@ import edu.harvard.data.client.DataConfigurationException;
 import edu.harvard.data.client.canvas.api.CanvasApiClient;
 import edu.harvard.data.client.canvas.api.CanvasDataSchema;
 import edu.harvard.data.client.canvas.api.UnexpectedApiResponseException;
-import edu.harvard.data.client.generators.JavaBindingGenerator;
+import edu.harvard.data.client.generators.canvas.JavaBindingGenerator;
 
 public class GenerateJavaSdkCommand implements Command {
 
