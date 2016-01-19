@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -72,19 +73,33 @@ public class JavaBindingGenerator {
     File srcDir = new File(srcBase, ORIGINAL_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
     String classPrefix = "";
     log.info("Generating original schema tables in " + srcDir);
-    generateTableSet(ORIGINAL_SCHEMA_PACKAGE, classPrefix, srcDir);
+    generateTableSet(ORIGINAL_SCHEMA_PACKAGE, classPrefix, null, null, srcDir);
 
     srcDir = new File(srcBase, EXTENDED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
     classPrefix = "Extended";
     log.info("Generating extended schema tables in " + srcDir);
+    setNewGeneratedFlags(tables.values(), false);
     extendTableSchema("java_bindings/extended_schema_additions.json");
-    generateTableSet(EXTENDED_SCHEMA_PACKAGE, classPrefix, srcDir);
+    generateTableSet(EXTENDED_SCHEMA_PACKAGE, classPrefix, "", ORIGINAL_SCHEMA_PACKAGE, srcDir);
 
     srcDir = new File(srcBase, MERGED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
     classPrefix = "Merged";
     log.info("Generating merged schema tables in " + srcDir);
+    setNewGeneratedFlags(tables.values(), false);
     extendTableSchema("java_bindings/merged_schema_additions.json");
-    generateTableSet(MERGED_SCHEMA_PACKAGE, classPrefix, srcDir);
+    generateTableSet(MERGED_SCHEMA_PACKAGE, classPrefix, "Extended", EXTENDED_SCHEMA_PACKAGE,
+        srcDir);
+  }
+
+  // Bulk-set the newGenerated flags on a set of tables.
+  private void setNewGeneratedFlags(final Collection<CanvasDataSchemaTable> tableSet,
+      final boolean flag) {
+    for (final CanvasDataSchemaTable table : tableSet) {
+      table.setNewGenerated(flag);
+      for (final CanvasDataSchemaColumn column : table.getColumns()) {
+        column.setNewGenerated(flag);
+      }
+    }
   }
 
   // Read the JSON file and add any new tables or fields to the schema. If a
@@ -98,6 +113,8 @@ public class JavaBindingGenerator {
       updates = jsonMapper.readValue(in, CanvasDataSchema.class).getSchema();
     }
     if (updates != null) {
+      // Track tables and columns that were added in this update
+      setNewGeneratedFlags(updates.values(), true);
       for (final String tableName : updates.keySet()) {
         final CanvasDataSchemaTable newTable = updates.get(tableName);
         if (!tables.containsKey(tableName)) {
@@ -111,14 +128,15 @@ public class JavaBindingGenerator {
   }
 
   private void generateTableSet(final String tablePackage, final String classPrefix,
-      final File srcDir) throws IOException {
+      final String previousClassPrefix, final String previousPackage, final File srcDir)
+          throws IOException {
     if (srcDir.exists()) {
       log.info("Deleting: " + srcDir);
       FileUtils.deleteDirectory(srcDir);
     }
     srcDir.mkdirs();
     final List<String> tableNames = generateTableNames();
-    generateModels(tablePackage, classPrefix, srcDir);
+    generateModels(tablePackage, classPrefix, previousClassPrefix, previousPackage, srcDir);
     generateCanvasTableEnum(tableNames, tablePackage, classPrefix, srcDir);
     generateCanvasTableFactory(tableNames, tablePackage, classPrefix, srcDir);
   }
@@ -144,12 +162,16 @@ public class JavaBindingGenerator {
 
   // Generate one class per schema table
   private void generateModels(final String tablePackage, final String classPrefix,
-      final File srcDir) throws FileNotFoundException {
+      final String previousClassPrefix, final String previousPackage, final File srcDir)
+          throws FileNotFoundException {
     for (final String name : tables.keySet()) {
       final String className = javaClass(tables.get(name).getTableName(), classPrefix);
+      final String previousClassName = previousClassPrefix == null ? null
+          : javaClass(tables.get(name).getTableName(), previousClassPrefix);
       final File classFile = new File(srcDir, className + ".java");
       try (final PrintStream out = new PrintStream(new FileOutputStream(classFile))) {
-        generateTableClass(className, tables.get(name), tablePackage, classPrefix, out);
+        generateTableClass(className, tables.get(name), tablePackage, classPrefix,
+            previousClassName, previousPackage, tables.get(name).getNewGenerated(), out);
       }
     }
   }
@@ -297,7 +319,8 @@ public class JavaBindingGenerator {
   }
 
   private void generateTableClass(final String className, final CanvasDataSchemaTable table,
-      final String tablePackage, final String classPrefix, final PrintStream out) {
+      final String tablePackage, final String classPrefix, final String previousClassName,
+      final String previousPackage, final boolean newGenerated, final PrintStream out) {
     log.info("Generating table " + className);
     writeFileHeader(out);
     out.println("package " + tablePackage + ";");
@@ -316,6 +339,10 @@ public class JavaBindingGenerator {
     out.println("import " + CLIENT_PACKAGE + ".DataTable;");
     out.println("import " + CLIENT_PACKAGE + ".TableFormat;");
     out.println();
+    if (previousPackage != null && !newGenerated) {
+      out.println("import " + previousPackage + "." + previousClassName + ";");
+      out.println();
+    }
 
     out.println("public class " + className + " implements DataTable {");
     for (final CanvasDataSchemaColumn column : table.getColumns()) {
@@ -337,15 +364,42 @@ public class JavaBindingGenerator {
     out.println("  }");
     out.println();
 
+    // Generate a constructor to go from a previous phase of the table (if one
+    // exists). For example, class ExtendedRequests will have a constructor
+    // 'public ExtendedRequests(Requests requests)'
+    if (previousClassName != null && !newGenerated) {
+      final String previousVar = javaVariable(previousClassName);
+      out.println("  public " + className + "(" + previousClassName + " " + previousVar + ") {");
+      for (final CanvasDataSchemaColumn column : table.getColumns()) {
+        if (!column.getNewGenerated()) {
+          final String variableName = javaVariable(column.getName());
+          final String methodName = "get" + javaClass(variableName, "");
+          out.println("    this." + variableName + " = " + previousVar + "." + methodName + "();");
+        }
+      }
+      out.println("  }");
+      out.println();
+    }
+
+    // Generate getters and setters
     for (final CanvasDataSchemaColumn column : table.getColumns()) {
       final String typeName = javaType(column.getType());
-      final String methodName = "get" + javaClass(column.getName(), classPrefix);
+      String methodName = "get" + javaClass(column.getName(), "");
       final String variableName = javaVariable(column.getName());
       writeComment(column.getDescription(), 2, out, true);
       out.println("  public " + typeName + " " + methodName + "() {");
       out.println("    return this." + variableName + ";");
       out.println("  }");
       out.println();
+      // Generate setters only for new fields
+      if (column.getNewGenerated()) {
+        methodName = "set" + javaClass(column.getName(), "");
+        writeComment(column.getDescription(), 2, out, true);
+        out.println("  public void " + methodName + "(" + typeName + " " + variableName + ") {");
+        out.println("    this." + variableName + " = " + variableName + ";");
+        out.println("  }");
+        out.println();
+      }
     }
 
     out.println("  @Override");
@@ -507,7 +561,10 @@ public class JavaBindingGenerator {
   private String javaClass(final String str, final String classPrefix) {
     String className = classPrefix;
     for (final String part : str.split("_")) {
-      className += part.substring(0, 1).toUpperCase() + part.substring(1);
+      if (part.length() > 0) {
+        className += part.substring(0, 1).toUpperCase()
+            + (part.length() > 1 ? part.substring(1) : "");
+      }
     }
     return className;
   }
@@ -538,7 +595,7 @@ public class JavaBindingGenerator {
 
   private String javaVariable(final String name) {
     final String[] parts = name.split("_");
-    String variableName = parts[0];
+    String variableName = parts[0].substring(0, 1).toLowerCase() + parts[0].substring(1);
     for (int i = 1; i < parts.length; i++) {
       final String part = parts[i];
       variableName += part.substring(0, 1).toUpperCase() + part.substring(1);

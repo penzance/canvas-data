@@ -12,8 +12,9 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import edu.harvard.data.client.FormatLibrary;
 import edu.harvard.data.client.FormatLibrary.Format;
 import edu.harvard.data.client.TableFormat;
+import edu.harvard.data.client.canvas.extended.ExtendedRequests;
 
-public class RequestsReducer extends Reducer<LongWritable, ExpandedRequest, LongWritable, Text> {
+public class RequestsReducer extends Reducer<LongWritable, ExtendedRequests, LongWritable, Text> {
 
   private final TableFormat format;
   private MultipleOutputs<LongWritable, Text> outputs;
@@ -33,14 +34,14 @@ public class RequestsReducer extends Reducer<LongWritable, ExpandedRequest, Long
   }
 
   @Override
-  public void reduce(final LongWritable courseId, final Iterable<ExpandedRequest> values,
+  public void reduce(final LongWritable courseId, final Iterable<ExtendedRequests> values,
       final Context context) throws IOException, InterruptedException {
-    for (final ExpandedRequest request : values) {
+    for (final ExtendedRequests request : values) {
       final StringWriter writer = new StringWriter();
       try (final CSVPrinter printer = new CSVPrinter(writer, format.getCsvFormat())) {
         printer.printRecord(request.getFieldsAsList(format));
       }
-      final LongWritable timestamp = new LongWritable(request.getTimestamp());
+      final LongWritable timestamp = new LongWritable(request.getTimestamp().getTime());
       final Text csvText = new Text(writer.toString().trim());
       context.write(timestamp, csvText);
       if (request.getUserId() != null && request.getUserId() == 134926641248969922L) {

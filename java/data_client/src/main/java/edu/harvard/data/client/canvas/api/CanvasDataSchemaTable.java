@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CanvasDataSchemaTable {
@@ -24,6 +25,9 @@ public class CanvasDataSchemaTable {
   private final String seeAlso;
   private final String databasePath; // non-null in requests
   private final String originalTable; // non-null in requests
+
+  @JsonIgnore
+  private boolean newGenerated;
 
   @JsonCreator
   public CanvasDataSchemaTable(@JsonProperty("dw_type") final DataWarehouseType dwType,
@@ -44,6 +48,7 @@ public class CanvasDataSchemaTable {
     this.databasePath = databasePath;
     this.originalTable = originalTable;
     this.seeAlso = seeAlso;
+    this.setNewGenerated(false);
   }
 
   public CanvasDataSchemaTable(final CanvasDataSchemaTable original) {
@@ -55,6 +60,7 @@ public class CanvasDataSchemaTable {
     this.seeAlso = original.seeAlso;
     this.databasePath = original.databasePath;
     this.originalTable = original.originalTable;
+    this.setNewGenerated(original.newGenerated);
     this.columns = new ArrayList<CanvasDataSchemaColumn>();
     for (final CanvasDataSchemaColumn column : original.columns) {
       this.columns.add(new CanvasDataSchemaColumn(column));
@@ -179,5 +185,13 @@ public class CanvasDataSchemaTable {
 
   public void setColumns(final ArrayList<CanvasDataSchemaColumn> newColumns) {
     this.columns = newColumns;
+  }
+
+  public boolean getNewGenerated() {
+    return newGenerated;
+  }
+
+  public void setNewGenerated(final boolean newGenerated) {
+    this.newGenerated = newGenerated;
   }
 }

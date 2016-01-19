@@ -13,6 +13,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import edu.harvard.data.client.canvas.extended.ExtendedRequests;
+
 public class RequestsHadoopJob {
 
   public static void main(final String[] args)
@@ -34,7 +36,7 @@ public class RequestsHadoopJob {
     job.setReducerClass(RequestsReducer.class);
 
     job.setMapOutputKeyClass(LongWritable.class);
-    job.setMapOutputValueClass(ExpandedRequest.class);
+    job.setMapOutputValueClass(ExtendedRequests.class);
 
     job.setInputFormatClass(TextInputFormat.class);
     job.setOutputFormatClass(TextOutputFormat.class);

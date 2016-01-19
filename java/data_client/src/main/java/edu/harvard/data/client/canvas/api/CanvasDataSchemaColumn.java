@@ -3,6 +3,7 @@ package edu.harvard.data.client.canvas.api;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CanvasDataSchemaColumn {
@@ -19,6 +20,9 @@ public class CanvasDataSchemaColumn {
   // conversation_message_participant.user_id
   private final String seeAlso;
   private final Boolean sortKey; // true for requests.timestamp
+
+  @JsonIgnore
+  private boolean newGenerated;
 
   @JsonCreator
   public CanvasDataSchemaColumn(@JsonProperty("name") final String name,
@@ -38,6 +42,7 @@ public class CanvasDataSchemaColumn {
     this.length = length;
     this.snowflake = snowflake;
     this.seeAlso = seeAlso;
+    this.newGenerated = false;
   }
 
   public CanvasDataSchemaColumn(final CanvasDataSchemaColumn original) {
@@ -50,6 +55,7 @@ public class CanvasDataSchemaColumn {
     this.snowflake = original.snowflake;
     this.seeAlso = original.seeAlso;
     this.sortKey = original.sortKey;
+    this.newGenerated = original.newGenerated;
   }
 
   public String getName() {
@@ -94,6 +100,14 @@ public class CanvasDataSchemaColumn {
       typeString += "(" + length + ")";
     }
     return typeString;
+  }
+
+  public boolean getNewGenerated() {
+    return newGenerated;
+  }
+
+  public void setNewGenerated(final boolean newGenerated) {
+    this.newGenerated = newGenerated;
   }
 
   public void calculateDifferences(final String tableName, final CanvasDataSchemaColumn column2, final List<SchemaDifference> differences) {
