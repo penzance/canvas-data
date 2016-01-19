@@ -40,6 +40,18 @@ public class CanvasDataSchemaColumn {
     this.seeAlso = seeAlso;
   }
 
+  public CanvasDataSchemaColumn(final CanvasDataSchemaColumn original) {
+    this.name = original.name;
+    this.description = original.description;
+    this.descripton = original.descripton;
+    this.type = original.type;
+    this.dimension = original.dimension == null ? null : new CanvasDataSchemaDimension(original.dimension);
+    this.length = original.length;
+    this.snowflake = original.snowflake;
+    this.seeAlso = original.seeAlso;
+    this.sortKey = original.sortKey;
+  }
+
   public String getName() {
     return name;
   }

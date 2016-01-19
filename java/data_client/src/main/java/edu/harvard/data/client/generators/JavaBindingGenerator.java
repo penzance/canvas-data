@@ -21,9 +21,11 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 
 import com.amazonaws.services.s3.model.S3ObjectId;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import edu.harvard.data.client.AwsUtils;
 import edu.harvard.data.client.DataTable;
+import edu.harvard.data.client.FormatLibrary;
 import edu.harvard.data.client.TableFactory;
 import edu.harvard.data.client.TableFormat;
 import edu.harvard.data.client.canvas.api.CanvasDataSchema;
@@ -38,42 +40,87 @@ import edu.harvard.data.client.io.TableWriter;
 
 public class JavaBindingGenerator {
 
-  private static final String TABLE_PACKAGE = "edu.harvard.data.client.canvas.tables";
   private static final String CLIENT_PACKAGE = "edu.harvard.data.client";
+  private static final String ORIGINAL_SCHEMA_PACKAGE = CLIENT_PACKAGE + ".canvas.original";
+  private static final String EXTENDED_SCHEMA_PACKAGE = CLIENT_PACKAGE + ".canvas.extended";
+  private static final String MERGED_SCHEMA_PACKAGE = CLIENT_PACKAGE + ".canvas.merged";
   private static final Logger log = Logger.getLogger("Canvas Data");
 
   private final File dir;
-  private final File srcDir;
   private final Map<String, CanvasDataSchemaTable> tables;
   private final String version;
+  private final ObjectMapper jsonMapper;
 
-  public JavaBindingGenerator(final File dir, final CanvasDataSchema schema) {
+  public JavaBindingGenerator(final File dir, CanvasDataSchema schema) {
     this.dir = dir;
-    this.srcDir = new File(dir,
-        new String("src.main.java." + TABLE_PACKAGE).replaceAll("\\.", File.separator));
+    schema = new CanvasDataSchema(schema); // we're going to change the table
+    // structure; make a copy first.
     this.version = schema.getVersion();
     this.tables = schema.getSchema();
+    jsonMapper = new ObjectMapper();
+    jsonMapper.setDateFormat(FormatLibrary.JSON_DATE_FORMAT);
   }
 
   public void generate() throws IOException {
     log.info("Generating Java bindings in " + dir);
-    log.info("Source directory: " + srcDir);
     if (!dir.exists()) {
       dir.mkdirs();
     }
+    copyPomXml();
+    final File srcBase = new File(dir, "src/main/java");
+
+    File srcDir = new File(srcBase, ORIGINAL_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
+    String classPrefix = "";
+    log.info("Generating original schema tables in " + srcDir);
+    generateTableSet(ORIGINAL_SCHEMA_PACKAGE, classPrefix, srcDir);
+
+    srcDir = new File(srcBase, EXTENDED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
+    classPrefix = "Extended";
+    log.info("Generating extended schema tables in " + srcDir);
+    extendTableSchema("java_bindings/extended_schema_additions.json");
+    generateTableSet(EXTENDED_SCHEMA_PACKAGE, classPrefix, srcDir);
+
+    srcDir = new File(srcBase, MERGED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
+    classPrefix = "Merged";
+    log.info("Generating merged schema tables in " + srcDir);
+    extendTableSchema("java_bindings/merged_schema_additions.json");
+    generateTableSet(MERGED_SCHEMA_PACKAGE, classPrefix, srcDir);
+  }
+
+  // Read the JSON file and add any new tables or fields to the schema. If a
+  // table in the JSON file does not exist in the schema, it is created. If a
+  // table does exist, any fields specified in the JSON are appended to the
+  // field list for that table.
+  private void extendTableSchema(final String jsonResource) throws IOException {
+    final ClassLoader classLoader = this.getClass().getClassLoader();
+    Map<String, CanvasDataSchemaTable> updates;
+    try (final InputStream in = classLoader.getResourceAsStream(jsonResource)) {
+      updates = jsonMapper.readValue(in, CanvasDataSchema.class).getSchema();
+    }
+    if (updates != null) {
+      for (final String tableName : updates.keySet()) {
+        final CanvasDataSchemaTable newTable = updates.get(tableName);
+        if (!tables.containsKey(tableName)) {
+          tables.put(tableName, newTable);
+        } else {
+          final CanvasDataSchemaTable originalTable = tables.get(tableName);
+          originalTable.getColumns().addAll(newTable.getColumns());
+        }
+      }
+    }
+  }
+
+  private void generateTableSet(final String tablePackage, final String classPrefix,
+      final File srcDir) throws IOException {
     if (srcDir.exists()) {
       log.info("Deleting: " + srcDir);
       FileUtils.deleteDirectory(srcDir);
     }
     srcDir.mkdirs();
-
-    copyPomXml();
-
     final List<String> tableNames = generateTableNames();
-
-    generateModels();
-    generateCanvasTableEnum(tableNames);
-    generateCanvasTableFactory(tableNames);
+    generateModels(tablePackage, classPrefix, srcDir);
+    generateCanvasTableEnum(tableNames, tablePackage, classPrefix, srcDir);
+    generateCanvasTableFactory(tableNames, tablePackage, classPrefix, srcDir);
   }
 
   private void copyPomXml() throws IOException {
@@ -81,7 +128,8 @@ public class JavaBindingGenerator {
     final File pomTmp = new File(dir, "pom.xml.tmp");
     log.info("Creating pom.xml file at " + pomFile);
     try (
-        InputStream inStream = this.getClass().getClassLoader().getResourceAsStream("java_bindings/pom.xml.template");
+        InputStream inStream = this.getClass().getClassLoader()
+        .getResourceAsStream("java_bindings/pom.xml.template");
         BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
         BufferedWriter out = new BufferedWriter(new FileWriter(pomTmp))) {
       String line = in.readLine();
@@ -94,26 +142,14 @@ public class JavaBindingGenerator {
     pomTmp.renameTo(pomFile);
   }
 
-  private void copyTemplateFile(final String resource, final File outputFile) throws IOException {
-    log.info("Copying " + resource + " to " + outputFile);
-    try (InputStream inStream = this.getClass().getClassLoader().getResourceAsStream(resource);
-        BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
-        BufferedWriter out = new BufferedWriter(new FileWriter(outputFile))) {
-      String line = in.readLine();
-      while (line != null) {
-        out.write(line + "\n");
-        line = in.readLine();
-      }
-    }
-  }
-
   // Generate one class per schema table
-  private void generateModels() throws FileNotFoundException {
+  private void generateModels(final String tablePackage, final String classPrefix,
+      final File srcDir) throws FileNotFoundException {
     for (final String name : tables.keySet()) {
-      final String className = javaClass(tables.get(name).getTableName());
+      final String className = javaClass(tables.get(name).getTableName(), classPrefix);
       final File classFile = new File(srcDir, className + ".java");
       try (final PrintStream out = new PrintStream(new FileOutputStream(classFile))) {
-        generateTableClass(className, tables.get(name), out);
+        generateTableClass(className, tables.get(name), tablePackage, classPrefix, out);
       }
     }
   }
@@ -130,26 +166,28 @@ public class JavaBindingGenerator {
   }
 
   // Create the CanvasTable Enum type
-  private void generateCanvasTableEnum(final List<String> tableNames) throws FileNotFoundException {
-    final File tableEnumFile = new File(srcDir, "CanvasTable.java");
+  private void generateCanvasTableEnum(final List<String> tableNames, final String tablePackage,
+      final String classPrefix, final File srcDir) throws FileNotFoundException {
+    final File tableEnumFile = new File(srcDir, classPrefix + "CanvasTable.java");
     try (final PrintStream out = new PrintStream(new FileOutputStream(tableEnumFile))) {
-      generateTableEnum(out, tableNames);
+      generateTableEnum(out, tableNames, tablePackage, classPrefix);
     }
   }
 
   // Create the CanvasTableFactory class
-  private void generateCanvasTableFactory(final List<String> tableNames)
-      throws FileNotFoundException {
-    final File tableFactoryFile = new File(srcDir, "CanvasTableFactory.java");
+  private void generateCanvasTableFactory(final List<String> tableNames, final String tablePackage,
+      final String classPrefix, final File srcDir) throws FileNotFoundException {
+    final File tableFactoryFile = new File(srcDir, classPrefix + "CanvasTableFactory.java");
     try (final PrintStream out = new PrintStream(new FileOutputStream(tableFactoryFile))) {
-      generateCanvasTableFactory(out, tableNames);
+      generateCanvasTableFactory(out, tableNames, tablePackage, classPrefix);
     }
   }
 
-  private void generateCanvasTableFactory(final PrintStream out, final List<String> tableNames) {
+  private void generateCanvasTableFactory(final PrintStream out, final List<String> tableNames,
+      final String tablePackage, final String classPrefix) {
     log.info("Generating CanvasTableFactory");
     writeFileHeader(out);
-    out.println("package " + TABLE_PACKAGE + ";");
+    out.println("package " + tablePackage + ";");
     out.println();
     out.println("import " + File.class.getName() + ";");
     out.println("import " + IOException.class.getName() + ";");
@@ -161,20 +199,19 @@ public class JavaBindingGenerator {
     out.println("import " + FileTableReader.class.getName() + ";");
     out.println("import " + FileTableWriter.class.getName() + ";");
     out.println("import " + S3TableReader.class.getName() + ";");
-    //    out.println("import " + S3TableWriter.class.getName() + ";");
     out.println("import " + TableFactory.class.getName() + ";");
     out.println("import " + TableFormat.class.getName() + ";");
     out.println("import " + TableReader.class.getName() + ";");
     out.println("import " + TableWriter.class.getName() + ";");
     out.println();
-    out.println("public class CanvasTableFactory implements TableFactory {");
+    out.println("public class " + classPrefix + "CanvasTableFactory implements TableFactory {");
     out.println();
     out.println("  @Override");
     out.println(
         "  public TableReader<? extends DataTable> getTableReader(String table, TableFormat format, File file) throws IOException {");
     out.println("    switch(table) {");
     for (final String name : tableNames) {
-      final String className = javaClass(name);
+      final String className = javaClass(name, classPrefix);
       out.println("    case \"" + name + "\":");
       out.println("      return new FileTableReader<" + className + ">(" + className
           + ".class, format, file, \"" + name + "\");");
@@ -188,7 +225,7 @@ public class JavaBindingGenerator {
         "  public TableReader<? extends DataTable> getTableReader(final String table, final TableFormat format, final AwsUtils aws, final S3ObjectId obj, final File tempDir) throws IOException {");
     out.println("    switch(table) {");
     for (final String name : tableNames) {
-      final String className = javaClass(name);
+      final String className = javaClass(name, classPrefix);
       out.println("    case \"" + name + "\":");
       out.println("      return new S3TableReader<" + className + ">(aws, " + className
           + ".class, format, obj, \"" + name + "\", tempDir);");
@@ -202,7 +239,7 @@ public class JavaBindingGenerator {
         "  public TableWriter<? extends DataTable> getTableWriter(String table, TableFormat format, File file) throws IOException {");
     out.println("    switch(table) {");
     for (final String name : tableNames) {
-      final String className = javaClass(name);
+      final String className = javaClass(name, classPrefix);
       out.println("    case \"" + name + "\":");
       out.println("      return new FileTableWriter<" + className + ">(" + className
           + ".class, format, \"" + name + "\", file);");
@@ -213,17 +250,18 @@ public class JavaBindingGenerator {
     out.println("}");
   }
 
-  private void generateTableEnum(final PrintStream out, final List<String> tableNames) {
+  private void generateTableEnum(final PrintStream out, final List<String> tableNames,
+      final String tablePackage, final String classPrefix) {
     log.info("Generating CanvasTable Enum");
     writeFileHeader(out);
-    out.println("package " + TABLE_PACKAGE + ";");
+    out.println("package " + tablePackage + ";");
     out.println();
-    out.println("  import " + CLIENT_PACKAGE + ".DataTable;");
+    out.println("import " + CLIENT_PACKAGE + ".DataTable;");
     out.println();
-    out.println("public enum CanvasTable {");
+    out.println("public enum " + classPrefix + "CanvasTable {");
     for (int i = 0; i < tableNames.size(); i++) {
       final String name = tableNames.get(i);
-      final String className = javaClass(name);
+      final String className = javaClass(name, classPrefix);
       out.print("  " + className + "(\"" + name + "\", " + className + ".class)");
       out.println(i == (tableNames.size() - 1) ? ";" : ",");
     }
@@ -231,8 +269,8 @@ public class JavaBindingGenerator {
     out.println("  private final String sourceName;");
     out.println("  private final Class<? extends DataTable> tableClass;");
     out.println();
-    out.println(
-        "  private CanvasTable(final String sourceName, Class<? extends DataTable> tableClass) {");
+    out.println("  private " + classPrefix
+        + "CanvasTable(final String sourceName, Class<? extends DataTable> tableClass) {");
     out.println("    this.sourceName = sourceName;");
     out.println("    this.tableClass = tableClass;");
     out.println("  }");
@@ -245,10 +283,11 @@ public class JavaBindingGenerator {
     out.println("    return tableClass;");
     out.println("  }");
     out.println();
-    out.println("  public static CanvasTable fromSourceName(String sourceName) {");
+    out.println(
+        "  public static " + classPrefix + "CanvasTable fromSourceName(String sourceName) {");
     out.println("    switch(sourceName) {");
     for (final String name : tableNames) {
-      final String className = javaClass(name);
+      final String className = javaClass(name, classPrefix);
       out.println("    case \"" + name + "\": return " + className + ";");
     }
     out.println("    default: throw new RuntimeException(\"Unknown table name \" + sourceName);");
@@ -258,10 +297,10 @@ public class JavaBindingGenerator {
   }
 
   private void generateTableClass(final String className, final CanvasDataSchemaTable table,
-      final PrintStream out) {
+      final String tablePackage, final String classPrefix, final PrintStream out) {
     log.info("Generating table " + className);
     writeFileHeader(out);
-    out.println("package " + TABLE_PACKAGE + ";");
+    out.println("package " + tablePackage + ";");
     out.println();
     if (hasTimestampColumn(table)) {
       out.println("import java.sql.Timestamp;");
@@ -300,7 +339,7 @@ public class JavaBindingGenerator {
 
     for (final CanvasDataSchemaColumn column : table.getColumns()) {
       final String typeName = javaType(column.getType());
-      final String methodName = "get" + javaClass(column.getName());
+      final String methodName = "get" + javaClass(column.getName(), classPrefix);
       final String variableName = javaVariable(column.getName());
       writeComment(column.getDescription(), 2, out, true);
       out.println("  public " + typeName + " " + methodName + "() {");
@@ -465,8 +504,8 @@ public class JavaBindingGenerator {
     }
   }
 
-  private String javaClass(final String str) {
-    String className = "";
+  private String javaClass(final String str, final String classPrefix) {
+    String className = classPrefix;
     for (final String part : str.split("_")) {
       className += part.substring(0, 1).toUpperCase() + part.substring(1);
     }

@@ -1,5 +1,6 @@
 package edu.harvard.data.client.canvas.api;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +20,7 @@ public class CanvasDataSchemaTable {
   private final String tableName;
   private final Map<String, String> hints; // "sort_key" : "timestamp" in
   // requests
-  private final List<CanvasDataSchemaColumn> columns;
+  private List<CanvasDataSchemaColumn> columns;
   private final String seeAlso;
   private final String databasePath; // non-null in requests
   private final String originalTable; // non-null in requests
@@ -43,6 +44,21 @@ public class CanvasDataSchemaTable {
     this.databasePath = databasePath;
     this.originalTable = originalTable;
     this.seeAlso = seeAlso;
+  }
+
+  public CanvasDataSchemaTable(final CanvasDataSchemaTable original) {
+    this.dwType = original.dwType;
+    this.description = original.description;
+    this.incremental = original.incremental;
+    this.tableName = original.tableName;
+    this.hints = new HashMap<String, String>(original.hints);
+    this.seeAlso = original.seeAlso;
+    this.databasePath = original.databasePath;
+    this.originalTable = original.originalTable;
+    this.columns = new ArrayList<CanvasDataSchemaColumn>();
+    for (final CanvasDataSchemaColumn column : original.columns) {
+      this.columns.add(new CanvasDataSchemaColumn(column));
+    }
   }
 
   public DataWarehouseType getDwType() {
@@ -159,5 +175,9 @@ public class CanvasDataSchemaTable {
         differences.add(new SchemaDifference(tableName + ": Added hint " + hintKey));
       }
     }
+  }
+
+  public void setColumns(final ArrayList<CanvasDataSchemaColumn> newColumns) {
+    this.columns = newColumns;
   }
 }

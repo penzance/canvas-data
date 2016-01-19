@@ -19,6 +19,12 @@ public class CanvasDataSchemaDimension {
     this.role = role;
   }
 
+  public CanvasDataSchemaDimension(final CanvasDataSchemaDimension original) {
+    this.name = original.name;
+    this.id = original.id;
+    this.role = original.role;
+  }
+
   public String getName() {
     return name;
   }

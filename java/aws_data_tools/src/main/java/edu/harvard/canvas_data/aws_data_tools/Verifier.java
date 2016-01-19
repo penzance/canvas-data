@@ -23,7 +23,7 @@ import edu.harvard.data.client.AwsUtils;
 import edu.harvard.data.client.DataTable;
 import edu.harvard.data.client.TableFactory;
 import edu.harvard.data.client.TableFormat;
-import edu.harvard.data.client.canvas.tables.CanvasTable;
+import edu.harvard.data.client.canvas.original.CanvasTable;
 import edu.harvard.data.client.io.TableReader;
 import edu.harvard.data.client.io.TableWriter;
 

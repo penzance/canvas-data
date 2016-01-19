@@ -2,6 +2,7 @@ package edu.harvard.data.client.canvas.api;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,14 @@ public class CanvasDataSchema {
       @JsonProperty("schema") final Map<String, CanvasDataSchemaTable> schema) {
     this.version = version;
     this.schema = schema;
+  }
+
+  public CanvasDataSchema(final CanvasDataSchema original) {
+    this.version = original.version;
+    this.schema = new HashMap<String, CanvasDataSchemaTable>();
+    for (final String tableName : original.schema.keySet()) {
+      this.schema.put(tableName, new CanvasDataSchemaTable(original.schema.get(tableName)));
+    }
   }
 
   public String getVersion() {

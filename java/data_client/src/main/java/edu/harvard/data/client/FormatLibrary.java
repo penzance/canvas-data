@@ -58,6 +58,8 @@ public class FormatLibrary {
 
   public static final DateFormat LOCAL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd Z");
 
+  public static final DateFormat JSON_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+
   private static final CSVFormat CANVAS_CSV_FORMAT = CSVFormat.TDF.withQuote(null)
       .withNullString("\\N").withRecordSeparator("\n").withIgnoreSurroundingSpaces(false);
 
