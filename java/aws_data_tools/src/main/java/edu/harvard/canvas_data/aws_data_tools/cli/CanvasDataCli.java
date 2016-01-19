@@ -12,6 +12,7 @@ import org.kohsuke.args4j.spi.SubCommandHandler;
 import org.kohsuke.args4j.spi.SubCommands;
 
 import edu.harvard.canvas_data.aws_data_tools.DataConfiguration;
+import edu.harvard.canvas_data.aws_data_tools.DumpInfo;
 import edu.harvard.canvas_data.aws_data_tools.FatalError;
 import edu.harvard.canvas_data.aws_data_tools.VerificationException;
 import edu.harvard.data.client.DataConfigurationException;
@@ -43,6 +44,8 @@ public class CanvasDataCli {
       // called.
       try {
         config = DataConfiguration.getConfiguration("secure.properties");
+        DumpInfo.init(config.getDumpInfoDynamoTable());
+        log.info("Using table " + config.getDumpInfoDynamoTable() + " for dump info.");
       } catch (final DataConfigurationException e) {
         log.fatal("Invalid configuration. Field", e);
         System.exit(ReturnStatus.CONFIG_ERROR.getCode());

@@ -2,23 +2,34 @@ package edu.harvard.canvas_data.aws_data_tools;
 
 import java.util.Date;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.s3.model.S3ObjectId;
 
 import edu.harvard.data.client.AwsUtils;
 
-@DynamoDBTable(tableName = "DumpStatus")
+@DynamoDBTable(tableName = "DummyTableName")
 public class DumpInfo {
 
-  private static DynamoDBMapper mapper;
+  private static final Logger log = LogManager.getLogger();
 
-  static {
+  private static DynamoDBMapper mapper;
+  private static String tableName;
+  private static DynamoDBMapperConfig mapperConfig;
+
+  public static void init(final String table) {
     mapper = new DynamoDBMapper(new AmazonDynamoDBClient());
+    tableName = table;
+    mapperConfig = new DynamoDBMapperConfig(new TableNameOverride(tableName));
   }
 
   @DynamoDBHashKey(attributeName = "id")
@@ -136,16 +147,21 @@ public class DumpInfo {
     this.downloadEnd = downloadEnd;
   }
 
-  public void save() {
-    mapper.save(this);
-  }
-
   public static DumpInfo find(final String dumpId) {
-    return mapper.load(DumpInfo.class, dumpId);
+    log.debug("Finding dump ID " + dumpId + " from table " + tableName);
+    return mapper.load(DumpInfo.class, dumpId, mapperConfig);
   }
 
   @DynamoDBIgnore
   public S3ObjectId getS3Location() {
     return AwsUtils.key(bucket, key);
+  }
+
+  public void save() {
+    if (tableName == null) {
+      throw new RuntimeException("DumpInfo object saved before init(tableName) method called");
+    }
+    log.info("Saving dump info sequence " + sequence + " to table " + tableName);
+    mapper.save(this, mapperConfig);
   }
 }

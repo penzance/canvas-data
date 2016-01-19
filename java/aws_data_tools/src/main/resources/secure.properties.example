@@ -19,3 +19,6 @@ scratch_dir=<File system location for temporary files>
 #       - dump_info.json
 #       - dataset.json
 canvas_data_archive_key=<S3 key prefix>
+
+# DynamoDB table to store dump metadata
+dump_info_dynamo_table=<Dynamo table with String key named 'id'>

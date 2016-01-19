@@ -17,8 +17,7 @@ public class DataConfiguration {
   private String canvasDataHost;
   private File scratchDir;
   private S3ObjectId canvasDataArchiveKey;
-  //  private String awsKey;
-  //  private String awsSecretKey;
+  private String dumpInfoDynamoTable;
 
   public static DataConfiguration getConfiguration(final String propertiesFileName)
       throws IOException, DataConfigurationException {
@@ -39,8 +38,7 @@ public class DataConfiguration {
     final String dataBucket = getConfigParameter(properties, "canvas_data_bucket");
     config.canvasDataArchiveKey = new S3ObjectId(dataBucket,
         getConfigParameter(properties, "canvas_data_archive_key"));
-    //    config.awsKey = getConfigParameter(properties, "aws_access_key_id");
-    //    config.awsSecretKey = getConfigParameter(properties, "aws_secret_access_key");
+    config.setDumpInfoDynamoTable(getConfigParameter(properties, "dump_info_dynamo_table"));
     return config;
   }
 
@@ -76,12 +74,12 @@ public class DataConfiguration {
     return canvasDataArchiveKey;
   }
 
-  //  @Override
-  //  public AWSCredentials getCredentials() {
-  //    return new BasicAWSCredentials(awsKey, awsSecretKey);
-  //  }
-  //
-  //  @Override
-  //  public void refresh() {
-  //  }
+  public String getDumpInfoDynamoTable() {
+    return dumpInfoDynamoTable;
+  }
+
+  public void setDumpInfoDynamoTable(final String dumpInfoDynamoTable) {
+    this.dumpInfoDynamoTable = dumpInfoDynamoTable;
+  }
+
 }
