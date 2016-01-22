@@ -44,8 +44,8 @@
     "ParameterValue": "my-bucket"
   },
   {
-    "ParameterKey": "DataPipelineLambdaCodeObjectParameter",
-    "ParameterValue": "data-pipeline-lambda-code.zip"
+    "ParameterKey": "DataPipelineInitLambdaCodeObjectParameter",
+    "ParameterValue": "data-pipeline-init-lambda-code.zip"
   },
   {
     "ParameterKey": "SuccessSNSEmailParameter",
