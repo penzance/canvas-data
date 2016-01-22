@@ -9,7 +9,7 @@
   },
   {
     "ParameterKey": "DownloadVerifyLambdaCodeObjectParameter",
-    "ParameterValue": "download-verify.zip"
+    "ParameterValue": "download-verify-lambda.zip"
   },
   {
     "ParameterKey": "DownloadVerifyAWSDataToolsJARLocationParameter",
@@ -45,7 +45,7 @@
   },
   {
     "ParameterKey": "DataPipelineInitLambdaCodeObjectParameter",
-    "ParameterValue": "data-pipeline-init-lambda-code.zip"
+    "ParameterValue": "data-pipeline-init-lambda.zip"
   },
   {
     "ParameterKey": "SuccessSNSEmailParameter",

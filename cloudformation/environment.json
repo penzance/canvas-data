@@ -15,7 +15,7 @@
         "DownloadVerifyLambdaCodeObjectParameter": {
             "Type": "String",
             "Description": "Name of ZIP file in the CodeS3Bucket containing the DowloadVerifyLambda function code",
-            "Default": "download-verify.zip"
+            "Default": "download-verify-lambda.zip"
         },
         "DownloadVerifyAWSDataToolsJARLocationParameter": {
             "Type": "String",
@@ -60,7 +60,7 @@
         "DataPipelineInitLambdaCodeObjectParameter": {
             "Type": "String",
             "Description": "Name of ZIP file in the CodeS3Bucket containing the DataPipelineInitLambda function code",
-            "Default": "data-pipeline-init-lambda-code.zip"
+            "Default": "data-pipeline-init-lambda.zip"
         },
         "SuccessSNSEmailParameter": {
             "Type": "String",
