@@ -338,7 +338,11 @@
                                         "s3:Get*",
                                         "s3:List*",
                                         "s3:Put*",
-                                        "sns:Publish"
+                                        "sns:Publish",
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents",
+                                        "logs:DescribeLogStreams"
                                     ],
                                     "Resource": [
                                         "*"
@@ -655,7 +659,15 @@
                             "",
                             [
                                 "#!/bin/bash\n",
-                                "# add something below to check for a result from download_and_verify.py of 0, indicating success\n",
+                                "\n",
+                                "# setup CloudWatch logging\n",
+                                "yum install -y awslogs\n",
+                                "aws s3 cp s3://",
+                                {
+                                    "Ref": "CodeS3BucketParameter"
+                                },
+                                "/awslogs.conf /etc/awslogs/.\n",
+                                "service awslogs start\n",
                                 "\n",
                                 "# copy DownloadVerifyAWSDataToolsJAR, DownloadVerifySchema, DownloadVerifyPythonScript and\n",
                                 "# DownloadVerifySecureProperties from S3 to the local FS\n",
