@@ -30,6 +30,30 @@ public enum CanvasDataSchemaType {
     return t;
   }
 
+  public String getHiveType() {
+    switch (this) {
+    case BigInt:
+      return "BIGINT";
+    case Boolean:
+      return "BOOLEAN";
+    case Date:
+      return "DATE";
+    case DateTime:
+    case Timestamp:
+      return "TIMESTAMP";
+    case DoublePrecision:
+      return "DOUBLE";
+    case Int:
+    case Integer:
+      return "INT";
+    case Text:
+    case VarChar:
+      return "STRING";
+    default:
+      throw new RuntimeException("Unknown Hive type: " + this);
+    }
+  }
+
   public String getRedshiftType() {
     switch (this) {
     case BigInt:

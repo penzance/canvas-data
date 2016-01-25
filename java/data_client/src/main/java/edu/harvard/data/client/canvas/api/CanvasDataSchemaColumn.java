@@ -102,6 +102,10 @@ public class CanvasDataSchemaColumn {
     return typeString;
   }
 
+  public String getHiveType() {
+    return type.getHiveType();
+  }
+
   public boolean getNewGenerated() {
     return newGenerated;
   }

@@ -56,7 +56,7 @@ public class CanvasDataSchemaTable {
     this.description = original.description;
     this.incremental = original.incremental;
     this.tableName = original.tableName;
-    this.hints = new HashMap<String, String>(original.hints);
+    this.hints = original.hints == null ? null : new HashMap<String, String>(original.hints);
     this.seeAlso = original.seeAlso;
     this.databasePath = original.databasePath;
     this.originalTable = original.originalTable;

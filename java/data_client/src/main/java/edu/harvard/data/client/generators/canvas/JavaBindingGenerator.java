@@ -12,7 +12,6 @@ import java.io.PrintStream;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -22,13 +21,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import edu.harvard.data.client.FormatLibrary;
 import edu.harvard.data.client.canvas.api.CanvasDataSchema;
-import edu.harvard.data.client.canvas.api.CanvasDataSchemaColumn;
 import edu.harvard.data.client.canvas.api.CanvasDataSchemaTable;
 import edu.harvard.data.client.canvas.api.CanvasDataSchemaType;
+import edu.harvard.data.client.generators.SchemaTransformer;
 
 public class JavaBindingGenerator {
 
@@ -43,18 +39,14 @@ public class JavaBindingGenerator {
   private static final String POM_XML_TEMPLATE = "java_bindings/pom.xml.template";
 
   private final File dir;
-  private final Map<String, CanvasDataSchemaTable> tables;
+  private final CanvasDataSchema schema;
   private final String version;
-  private final ObjectMapper jsonMapper;
 
-  public JavaBindingGenerator(final File dir, CanvasDataSchema schema) {
+
+  public JavaBindingGenerator(final File dir, final CanvasDataSchema schema) {
     this.dir = dir;
-    schema = new CanvasDataSchema(schema); // we're going to change the table
-    // structure; make a copy first.
     this.version = schema.getVersion();
-    this.tables = schema.getSchema();
-    jsonMapper = new ObjectMapper();
-    jsonMapper.setDateFormat(FormatLibrary.JSON_DATE_FORMAT);
+    this.schema = schema;
   }
 
   // Generates a new Maven project in the directory passed to the constructor.
@@ -85,22 +77,19 @@ public class JavaBindingGenerator {
     final File srcBase = new File(dir, "src/main/java");
 
     // Specify the three versions of the table bindings
-    final TableVersion original = new TableVersion(ORIGINAL_SCHEMA_PACKAGE, "");
-    final TableVersion extended = new TableVersion(EXTENDED_SCHEMA_PACKAGE, "Extended");
-    final TableVersion merged = new TableVersion(MERGED_SCHEMA_PACKAGE, "Merged");
-    original
-    .setSourceDir(new File(srcBase, ORIGINAL_SCHEMA_PACKAGE.replaceAll("\\.", File.separator)));
-    extended
-    .setSourceDir(new File(srcBase, EXTENDED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator)));
-    merged.setSourceDir(new File(srcBase, MERGED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator)));
+    final File originalDir = new File(srcBase, ORIGINAL_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
+    final File extendedDir = new File(srcBase, EXTENDED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
+    final File mergedDir = new File(srcBase, MERGED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
+    final SchemaTransformer transformer = new SchemaTransformer(3);
+    transformer.setPackages(ORIGINAL_SCHEMA_PACKAGE, EXTENDED_SCHEMA_PACKAGE, MERGED_SCHEMA_PACKAGE);
+    transformer.setClassPrefixes("", "Extended", "Merged");
+    transformer.setSourceDirs(originalDir, extendedDir, mergedDir);
+    transformer.setSchemas(schema, EXTENDED_ADDITIONS_JSON, MERGED_ADDITIONS_JSON);
 
-    // Generate bindings for each step in the processing pipeline, updating the
-    // schema with new tables and fields in between.
-    generateTableSet(original, null);
-    extendTableSchema(EXTENDED_ADDITIONS_JSON);
-    generateTableSet(extended, original);
-    extendTableSchema(MERGED_ADDITIONS_JSON);
-    generateTableSet(merged, extended);
+    // Generate bindings for each step in the processing pipeline.
+    generateTableSet(transformer.getPhase(0), null);
+    generateTableSet(transformer.getPhase(1), transformer.getPhase(0));
+    generateTableSet(transformer.getPhase(2), transformer.getPhase(1));
   }
 
   // Generate the bindings for one step in the processing pipeline. There are
@@ -119,6 +108,7 @@ public class JavaBindingGenerator {
       throws IOException {
     final File srcDir = tableVersion.getSourceDir();
     final String classPrefix = tableVersion.getClassPrefix();
+    final Map<String, CanvasDataSchemaTable> tables = tableVersion.getSchema().getSchema();
 
     // Create the base directory where all of the classes will be generated
     log.info("Generating tables in " + srcDir);
@@ -127,7 +117,7 @@ public class JavaBindingGenerator {
       FileUtils.deleteDirectory(srcDir);
     }
     srcDir.mkdirs();
-    final List<String> tableNames = generateTableNames();
+    final List<String> tableNames = generateTableNames(tables);
 
     // Generate the CanvasTable enum.
     final File tableEnumFile = new File(srcDir, classPrefix + "CanvasTable.java");
@@ -151,41 +141,6 @@ public class JavaBindingGenerator {
     }
   }
 
-  // Read the JSON file and add any new tables or fields to the schema. If a
-  // table in the JSON file does not exist in the schema, it is created. If a
-  // table does exist, any fields specified in the JSON are appended to the
-  // field list for that table.
-  private void extendTableSchema(final String jsonResource) throws IOException {
-    final ClassLoader classLoader = this.getClass().getClassLoader();
-    Map<String, CanvasDataSchemaTable> updates;
-    try (final InputStream in = classLoader.getResourceAsStream(jsonResource)) {
-      updates = jsonMapper.readValue(in, CanvasDataSchema.class).getSchema();
-    }
-    if (updates != null) {
-      // Track tables and columns that were added in this update
-      setNewGeneratedFlags(updates.values(), true);
-      for (final String tableName : updates.keySet()) {
-        final CanvasDataSchemaTable newTable = updates.get(tableName);
-        if (!tables.containsKey(tableName)) {
-          tables.put(tableName, newTable);
-        } else {
-          final CanvasDataSchemaTable originalTable = tables.get(tableName);
-          originalTable.getColumns().addAll(newTable.getColumns());
-        }
-      }
-    }
-  }
-
-  // Bulk-set the newGenerated flags on a set of tables.
-  private void setNewGeneratedFlags(final Collection<CanvasDataSchemaTable> tableSet,
-      final boolean flag) {
-    for (final CanvasDataSchemaTable table : tableSet) {
-      table.setNewGenerated(flag);
-      for (final CanvasDataSchemaColumn column : table.getColumns()) {
-        column.setNewGenerated(flag);
-      }
-    }
-  }
 
   // Generate the pom.xml file for the Maven project, based off a template in
   // the src/main/resources directory. Arguably this method should use an XML
@@ -213,7 +168,7 @@ public class JavaBindingGenerator {
 
   // Generate a sorted list of table names for the switch tables in the enum and
   // factory classes
-  private List<String> generateTableNames() {
+  private List<String> generateTableNames(final Map<String, CanvasDataSchemaTable> tables) {
     final List<String> tableNames = new ArrayList<String>();
     for (final String name : tables.keySet()) {
       tableNames.add(tables.get(name).getTableName());

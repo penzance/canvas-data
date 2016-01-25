@@ -2,15 +2,29 @@ package edu.harvard.data.client.generators.canvas;
 
 import java.io.File;
 
+import edu.harvard.data.client.canvas.api.CanvasDataSchema;
+
 public class TableVersion {
 
-  private final String packageName;
-  private final String classPrefix;
+  private String packageName;
+  private String classPrefix;
   private File sourceDir;
+  private CanvasDataSchema schema;
 
-  public TableVersion(final String packageName, final String classPrefix) {
+  public void setSourceDir(final File sourceDir) {
+    this.sourceDir = sourceDir;
+  }
+
+  public void setPackageName(final String packageName) {
     this.packageName = packageName;
+  }
+
+  public void setClassPrefix(final String classPrefix) {
     this.classPrefix = classPrefix;
+  }
+
+  public void setSchema(final CanvasDataSchema schema) {
+    this.schema = schema;
   }
 
   public String getPackageName() {
@@ -21,11 +35,11 @@ public class TableVersion {
     return classPrefix;
   }
 
-  public void setSourceDir(final File sourceDir) {
-    this.sourceDir = sourceDir;
-  }
-
   public File getSourceDir() {
     return sourceDir;
+  }
+
+  public CanvasDataSchema getSchema() {
+    return schema;
   }
 }
