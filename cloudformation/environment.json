@@ -740,6 +740,10 @@
                                     "Ref": "FailureSNS"
                                 },
                                 "\" --message \"Nice try\" --subject \"Failed to complete download and verify\" --region us-east-1\n",
+                                "\n",
+                                "# Reduce max instances for this machine's ASG to 0, thus terminating the machine\n",
+                                "asg=$(aws ec2 describe-tags --filters \"Name=resource-id,Values=$(curl http://169.254.169.254/latest/meta-data/instance-id)\" \"Name=key,Values=aws:autoscaling:groupName\" --query 'Tags[*].[Value]' --output text --region us-east-1); aws autoscaling update-auto-scaling-group --auto-scaling-group-name $asg --max-size 0 --region us-east-1\n"
+                                "\n",
                                 "  exit\n",
                                 "fi\n",
                                 "\n",
