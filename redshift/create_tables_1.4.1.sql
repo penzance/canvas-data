@@ -374,7 +374,7 @@ CREATE TABLE course_ui_canvas_navigation_dim(
     id BIGINT,
     canvas_id BIGINT,
     name VARCHAR(256),
-    default VARCHAR(256),
+    is_default VARCHAR(256),
     original_position VARCHAR(256)
 );
 CREATE TABLE pseudonym_fact(
