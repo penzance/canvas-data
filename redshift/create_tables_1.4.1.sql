@@ -25,7 +25,7 @@ CREATE TABLE assignment_dim(
     canvas_id BIGINT,
     course_id BIGINT,
     title VARCHAR(256),
-    description VARCHAR(0),
+    description VARCHAR(256),
     due_at TIMESTAMP,
     unlock_at TIMESTAMP,
     lock_at TIMESTAMP,
@@ -72,7 +72,8 @@ CREATE TABLE course_dim(
     publicly_visible BOOLEAN,
     sis_source_id VARCHAR(256),
     workflow_state VARCHAR(256),
-    wiki_id BIGINT
+    wiki_id BIGINT,
+    student_enrollments INTEGER
 );
 CREATE TABLE requests(
     id VARCHAR(50),
@@ -88,8 +89,8 @@ CREATE TABLE requests(
     discussion_id BIGINT,
     conversation_id BIGINT,
     assignment_id BIGINT,
-    url VARCHAR(0),
-    user_agent VARCHAR(0),
+    url VARCHAR(256),
+    user_agent VARCHAR(256),
     http_method VARCHAR(256),
     remote_ip VARCHAR(256),
     interaction_micros BIGINT,
@@ -132,7 +133,7 @@ CREATE TABLE enrollment_fact(
 CREATE TABLE submission_dim(
     id BIGINT,
     canvas_id BIGINT,
-    body VARCHAR(0),
+    body VARCHAR(256),
     url VARCHAR(256),
     grade VARCHAR(256),
     submitted_at TIMESTAMP,
@@ -174,11 +175,11 @@ CREATE TABLE quiz_question_dim(
     assessment_question_version INTEGER,
     name VARCHAR(256),
     question_type VARCHAR(256),
-    question_text VARCHAR(0),
+    question_text VARCHAR(256),
     regrade_option VARCHAR(256),
-    correct_comments VARCHAR(0),
-    incorrect_comments VARCHAR(0),
-    neutral_comments VARCHAR(0)
+    correct_comments VARCHAR(256),
+    incorrect_comments VARCHAR(256),
+    neutral_comments VARCHAR(256)
 );
 CREATE TABLE course_section_dim(
     id BIGINT,
@@ -202,10 +203,10 @@ CREATE TABLE wiki_dim(
     id BIGINT,
     canvas_id BIGINT,
     parent_type VARCHAR(256),
-    title VARCHAR(0),
+    title VARCHAR(256),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    front_page_url VARCHAR(0),
+    front_page_url VARCHAR(256),
     has_no_front_page BOOLEAN
 );
 CREATE TABLE quiz_submission_historical_dim(
@@ -237,7 +238,7 @@ CREATE TABLE conversation_message_dim(
     generated BOOLEAN,
     has_attachments BOOLEAN,
     has_media_objects BOOLEAN,
-    body VARCHAR(0)
+    body VARCHAR(256)
 );
 CREATE TABLE pseudonym_dim(
     id BIGINT,
@@ -261,7 +262,7 @@ CREATE TABLE pseudonym_dim(
 CREATE TABLE discussion_entry_dim(
     id BIGINT,
     canvas_id BIGINT,
-    message VARCHAR(0),
+    message VARCHAR(256),
     workflow_state VARCHAR(256),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
@@ -346,7 +347,7 @@ CREATE TABLE submission_comment_dim(
     author_id BIGINT,
     assessment_request_id BIGINT,
     group_comment_id VARCHAR(256),
-    comment VARCHAR(0),
+    comment VARCHAR(256),
     author_name VARCHAR(256),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
@@ -420,10 +421,10 @@ CREATE TABLE quiz_question_answer_dim(
     id BIGINT,
     canvas_id BIGINT,
     quiz_question_id BIGINT,
-    text VARCHAR(0),
-    html VARCHAR(0),
-    comments VARCHAR(0),
-    text_after_answers VARCHAR(0),
+    text VARCHAR(256),
+    html VARCHAR(256),
+    comments VARCHAR(256),
+    text_after_answers VARCHAR(256),
     answer_match_left VARCHAR(256),
     answer_match_right VARCHAR(256),
     matching_answer_incorrect_matches VARCHAR(256),
@@ -502,7 +503,7 @@ CREATE TABLE quiz_dim(
     root_account_id BIGINT,
     name VARCHAR(256),
     points_possible DOUBLE PRECISION,
-    description VARCHAR(0),
+    description VARCHAR(256),
     quiz_type VARCHAR(256),
     course_id BIGINT,
     assignment_id BIGINT,
@@ -529,6 +530,10 @@ CREATE TABLE quiz_dim(
     due_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
+CREATE TABLE requests_per_user(
+    user_id BIGINT,
+    requests BIGINT
+);
 CREATE TABLE conversation_dim(
     id BIGINT,
     canvas_id BIGINT,
@@ -543,14 +548,14 @@ CREATE TABLE group_dim(
     id BIGINT,
     canvas_id BIGINT,
     name VARCHAR(256),
-    description VARCHAR(0),
+    description VARCHAR(256),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     deleted_at TIMESTAMP,
     is_public BOOLEAN,
     workflow_state VARCHAR(256),
     context_type VARCHAR(256),
-    category VARCHAR(0),
+    category VARCHAR(256),
     join_level VARCHAR(256),
     default_view VARCHAR(256),
     sis_source_id BIGINT,
@@ -646,11 +651,11 @@ CREATE TABLE wiki_page_dim(
     id BIGINT,
     canvas_id BIGINT,
     title VARCHAR(256),
-    body VARCHAR(0),
+    body VARCHAR(256),
     workflow_state VARCHAR(256),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    url VARCHAR(0),
+    url VARCHAR(256),
     protected_editing BOOLEAN,
     editing_roles VARCHAR(256),
     revised_at TIMESTAMP,
@@ -721,7 +726,7 @@ CREATE TABLE discussion_topic_dim(
     id BIGINT,
     canvas_id BIGINT,
     title VARCHAR(256),
-    message VARCHAR(0),
+    message VARCHAR(256),
     type VARCHAR(256),
     workflow_state VARCHAR(256),
     last_reply_at TIMESTAMP,
