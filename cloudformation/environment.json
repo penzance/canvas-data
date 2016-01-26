@@ -732,14 +732,14 @@
                                 {
                                     "Ref": "DownloadVerifyPythonScriptLocationParameter"
                                 },
-                                "\n",
+                                " > /var/log/download-and-verify-output.log\n",
                                 "if [ $? -ne 0 ]; then\n",
                                 "  # do something useful to indicate failure\n",
                                 "  aws sns publish --topic-arn \"",
                                 {
                                     "Ref": "FailureSNS"
                                 },
-                                "\" --message \"Nice try\" --subject \"Failed to complete download and verify\" --region us-east-1\n",
+                                "\" --message file:///var/log/download-and-verify-output.log --subject \"$(curl http://169.254.169.254/latest/meta-data/instance-id): Download and verify failed\" --region us-east-1\n",
                                 "\n",
                                 "# Reduce max instances for this machine's ASG to 0, thus terminating the machine\n",
                                 "asg=$(aws ec2 describe-tags --filters \"Name=resource-id,Values=$(curl http://169.254.169.254/latest/meta-data/instance-id)\" \"Name=key,Values=aws:autoscaling:groupName\" --query 'Tags[*].[Value]' --output text --region us-east-1); aws autoscaling update-auto-scaling-group --auto-scaling-group-name $asg --max-size 0 --region us-east-1\n",
@@ -752,7 +752,7 @@
                                 {
                                     "Ref": "SuccessSNS"
                                 },
-                                "\" --message file:///root/the_result.json --subject \"Completed download and verify\" --region us-east-1\n",
+                                "\" --message file:///root/the_result.json --subject \"Download and verify succeeded\" --region us-east-1\n",
                                 "\n",
                                 "# Invoke the Lambda function to kickoff the Data Pipeline\n",
                                 "aws lambda invoke --function-name ",
@@ -1060,6 +1060,7 @@
                 "ClusterParameterGroupName": {
                     "Ref": "RedshiftClusterParameterGroup"
                 },
+                "PubliclyAccessible": "False",
                 "VpcSecurityGroupIds": [
                     {
                         "Ref": "RedshiftVPCSecurityGroup"
