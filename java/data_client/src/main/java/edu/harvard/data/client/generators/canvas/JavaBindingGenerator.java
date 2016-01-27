@@ -30,22 +30,20 @@ public class JavaBindingGenerator {
 
   private static final Logger log = LogManager.getLogger();
 
+  static final String PHASE_ONE_ADDITIONS_JSON = "java_bindings/phase1_schema_additions.json";
+  static final String PHASE_TWO_ADDITIONS_JSON = "java_bindings/phase2_schema_additions.json";
+
   static final String CLIENT_PACKAGE = "edu.harvard.data.client";
-  private static final String ORIGINAL_SCHEMA_PACKAGE = CLIENT_PACKAGE + ".canvas.original";
-  private static final String EXTENDED_SCHEMA_PACKAGE = CLIENT_PACKAGE + ".canvas.extended";
-  private static final String MERGED_SCHEMA_PACKAGE = CLIENT_PACKAGE + ".canvas.merged";
-  private static final String EXTENDED_ADDITIONS_JSON = "java_bindings/extended_schema_additions.json";
-  private static final String MERGED_ADDITIONS_JSON = "java_bindings/merged_schema_additions.json";
+  private static final String PHASE_ZERO_PACKAGE = CLIENT_PACKAGE + ".canvas.phase0";
+  private static final String PHASE_ONE_PACKAGE = CLIENT_PACKAGE + ".canvas.phase1";
+  private static final String PHASE_TWO_PACKAGE = CLIENT_PACKAGE + ".canvas.phase2";
   private static final String POM_XML_TEMPLATE = "java_bindings/pom.xml.template";
 
   private final File dir;
   private final CanvasDataSchema schema;
-  private final String version;
-
 
   public JavaBindingGenerator(final File dir, final CanvasDataSchema schema) {
     this.dir = dir;
-    this.version = schema.getVersion();
     this.schema = schema;
   }
 
@@ -53,16 +51,16 @@ public class JavaBindingGenerator {
   // The project has a pom.xml file and three sets of bindings (one for each
   // stage of data processing):
   //
-  // Original bindings are generated from the JSON schema provided by
+  // Phase Zero bindings are generated from the JSON schema provided by
   // Instructure (passed to the class constructor).
   //
-  // Extended bindings are produced by the first EMR job which supplements the
+  // Phase One bindings are produced by the first EMR job which supplements the
   // existing data set with new calculated data. The new tables and fields are
-  // specified in EXTENDED_ADDITION_JSON.
+  // specified in PHASE_ONE_ADDITIONS_JSON.
   //
-  // Merged bindings are produced by the second EMR job, and result from the
+  // Phase Two bindings are produced by the second EMR job, and result from the
   // merging of multiple data sets. The new tables and fields are specified in
-  // MERGED_ADDITIONS_JSON.
+  // PHASE_TWO_ADDITIONS_JSON.
   //
   public void generate() throws IOException {
     log.info("Generating Java bindings in " + dir);
@@ -72,19 +70,19 @@ public class JavaBindingGenerator {
     }
     // Create the pom.xml file from a template in src/main/resources, with the
     // appropriate version number.
-    copyPomXml();
+    copyPomXml(schema.getVersion());
 
     final File srcBase = new File(dir, "src/main/java");
 
     // Specify the three versions of the table bindings
-    final File originalDir = new File(srcBase, ORIGINAL_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
-    final File extendedDir = new File(srcBase, EXTENDED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
-    final File mergedDir = new File(srcBase, MERGED_SCHEMA_PACKAGE.replaceAll("\\.", File.separator));
+    final File phase0Dir = new File(srcBase, PHASE_ZERO_PACKAGE.replaceAll("\\.", File.separator));
+    final File phase1Dir = new File(srcBase, PHASE_ONE_PACKAGE.replaceAll("\\.", File.separator));
+    final File phase2Dir = new File(srcBase, PHASE_TWO_PACKAGE.replaceAll("\\.", File.separator));
     final SchemaTransformer transformer = new SchemaTransformer(3);
-    transformer.setPackages(ORIGINAL_SCHEMA_PACKAGE, EXTENDED_SCHEMA_PACKAGE, MERGED_SCHEMA_PACKAGE);
-    transformer.setClassPrefixes("", "Extended", "Merged");
-    transformer.setSourceDirs(originalDir, extendedDir, mergedDir);
-    transformer.setSchemas(schema, EXTENDED_ADDITIONS_JSON, MERGED_ADDITIONS_JSON);
+    transformer.setPackages(PHASE_ZERO_PACKAGE, PHASE_ONE_PACKAGE, PHASE_TWO_PACKAGE);
+    transformer.setPrefixes("", "Phase1", "Phase2");
+    transformer.setSourceLocations(phase0Dir, phase1Dir, phase2Dir);
+    transformer.setSchemas(schema, PHASE_ONE_ADDITIONS_JSON, PHASE_TWO_ADDITIONS_JSON);
 
     // Generate bindings for each step in the processing pipeline.
     generateTableSet(transformer.getPhase(0), null);
@@ -106,8 +104,9 @@ public class JavaBindingGenerator {
   //
   private void generateTableSet(final TableVersion tableVersion, final TableVersion previousVersion)
       throws IOException {
-    final File srcDir = tableVersion.getSourceDir();
-    final String classPrefix = tableVersion.getClassPrefix();
+    final File srcDir = tableVersion.getSourceLocation();
+    final String classPrefix = tableVersion.getPrefix();
+    final String version = tableVersion.getSchema().getVersion();
     final Map<String, CanvasDataSchemaTable> tables = tableVersion.getSchema().getSchema();
 
     // Create the base directory where all of the classes will be generated
@@ -146,7 +145,7 @@ public class JavaBindingGenerator {
   // the src/main/resources directory. Arguably this method should use an XML
   // parser, but for the sake of replacing one variable this approach is
   // somewhat more lightweight.
-  private void copyPomXml() throws IOException {
+  private void copyPomXml(final String version) throws IOException {
     final File pomFile = new File(dir, "pom.xml");
     final File pomTmp = new File(dir, "pom.xml.tmp");
     log.info("Creating pom.xml file at " + pomFile);
@@ -168,7 +167,7 @@ public class JavaBindingGenerator {
 
   // Generate a sorted list of table names for the switch tables in the enum and
   // factory classes
-  private List<String> generateTableNames(final Map<String, CanvasDataSchemaTable> tables) {
+  static List<String> generateTableNames(final Map<String, CanvasDataSchemaTable> tables) {
     final List<String> tableNames = new ArrayList<String>();
     for (final String name : tables.keySet()) {
       tableNames.add(tables.get(name).getTableName());

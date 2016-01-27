@@ -11,7 +11,9 @@ import edu.harvard.data.client.DataConfigurationException;
 import edu.harvard.data.client.canvas.api.CanvasApiClient;
 import edu.harvard.data.client.canvas.api.CanvasDataSchema;
 import edu.harvard.data.client.canvas.api.UnexpectedApiResponseException;
+import edu.harvard.data.client.generators.canvas.HiveBindingGenerator;
 import edu.harvard.data.client.generators.canvas.JavaBindingGenerator;
+import edu.harvard.data.client.generators.canvas.RedshiftBindingGenerator;
 
 public class GenerateJavaSdkCommand implements Command {
 
@@ -27,7 +29,9 @@ public class GenerateJavaSdkCommand implements Command {
     final CanvasApiClient api = new DataClient().getCanvasApiClient(config.getCanvasDataHost(),
         config.getCanvasApiKey(), config.getCanvasApiSecret());
     final CanvasDataSchema schema = api.getSchema(version);
-    new JavaBindingGenerator(output, schema).generate();
+    new JavaBindingGenerator(new File(output, "java"), schema).generate();
+    new HiveBindingGenerator(new File(output, "hive"), schema).generate();
+    new RedshiftBindingGenerator(new File(output, "redshift"), schema).generate();
     return ReturnStatus.OK;
   }
 

@@ -44,17 +44,17 @@ public class SchemaTransformer {
     }
   }
 
-  public void setClassPrefixes(final String... prefixes) {
+  public void setPrefixes(final String... prefixes) {
     if (prefixes.length != phases.size()) {
       throw new RuntimeException(
           "Expected " + phases.size() + " class prefixes, got " + prefixes.length);
     }
     for (int i = 0; i < prefixes.length; i++) {
-      phases.get(i).setClassPrefix(prefixes[i]);
+      phases.get(i).setPrefix(prefixes[i]);
     }
   }
 
-  public void setSourceDirs(final File... sourceDirs) {
+  public void setSourceLocations(final File... sourceDirs) {
     if (sourceDirs.length != phases.size()) {
       throw new RuntimeException(
           "Expected " + phases.size() + " source directories, got " + sourceDirs.length);

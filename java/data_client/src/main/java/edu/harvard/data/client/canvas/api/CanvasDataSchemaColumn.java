@@ -46,7 +46,7 @@ public class CanvasDataSchemaColumn {
   }
 
   public CanvasDataSchemaColumn(final CanvasDataSchemaColumn original) {
-    this.name = original.name;
+    this.name = cleanColumnName(original.name);
     this.description = original.description;
     this.descripton = original.descripton;
     this.type = original.type;
@@ -56,6 +56,16 @@ public class CanvasDataSchemaColumn {
     this.seeAlso = original.seeAlso;
     this.sortKey = original.sortKey;
     this.newGenerated = original.newGenerated;
+  }
+
+  private String cleanColumnName(final String name) {
+    final String clean = name;
+    switch(name) {
+    case "default":
+      return "is_default";
+    default:
+      return clean;
+    }
   }
 
   public String getName() {
@@ -97,7 +107,11 @@ public class CanvasDataSchemaColumn {
   public String getRedshiftType() {
     String typeString = type.getRedshiftType();
     if (typeString.equals("VARCHAR")) {
-      typeString += "(" + length + ")";
+      if (length == 0) {
+        typeString += "(256)";
+      } else {
+        typeString += "(" + length + ")";
+      }
     }
     return typeString;
   }

@@ -34,7 +34,7 @@ public class TableFactoryGenerator {
     this.schemaVersion = schemaVersion;
     this.tableNames = tableNames;
     this.tableVersion = tableVersion;
-    this.classPrefix = tableVersion.getClassPrefix();
+    this.classPrefix = tableVersion.getPrefix();
   }
 
   public void generate(final PrintStream out) {

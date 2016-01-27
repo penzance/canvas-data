@@ -191,6 +191,15 @@ public class CanvasDataSchemaTable {
     return newGenerated;
   }
 
+  public boolean hasNewlyGeneratedElements() {
+    for(final CanvasDataSchemaColumn column : columns) {
+      if (column.getNewGenerated()) {
+        return true;
+      }
+    }
+    return newGenerated;
+  }
+
   public void setNewGenerated(final boolean newGenerated) {
     this.newGenerated = newGenerated;
   }

@@ -38,10 +38,10 @@ public class ModelClassGenerator {
     this.table = table;
     this.tableVersion = tableVersion;
     this.previousVersion = previousVersion;
-    final String classPrefix = tableVersion.getClassPrefix();
+    final String classPrefix = tableVersion.getPrefix();
     this.className = JavaBindingGenerator.javaClass(table.getTableName(), classPrefix);
     this.previousClassName = previousVersion == null ? null
-        : JavaBindingGenerator.javaClass(table.getTableName(), previousVersion.getClassPrefix());
+        : JavaBindingGenerator.javaClass(table.getTableName(), previousVersion.getPrefix());
   }
 
   public void generate(final PrintStream out) {

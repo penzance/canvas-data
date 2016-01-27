@@ -22,7 +22,7 @@ public class CanvasTableGenerator {
   }
 
   public void generate(final PrintStream out) {
-    final String classPrefix = tableVersion.getClassPrefix();
+    final String classPrefix = tableVersion.getPrefix();
     log.info("Generating CanvasTable Enum");
     JavaBindingGenerator.writeFileHeader(out, schemaVersion);
     out.println("package " + tableVersion.getPackageName() + ";");

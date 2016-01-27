@@ -7,20 +7,20 @@ import edu.harvard.data.client.canvas.api.CanvasDataSchema;
 public class TableVersion {
 
   private String packageName;
-  private String classPrefix;
-  private File sourceDir;
+  private String prefix;
+  private File sourceLocation;
   private CanvasDataSchema schema;
 
   public void setSourceDir(final File sourceDir) {
-    this.sourceDir = sourceDir;
+    this.sourceLocation = sourceDir;
   }
 
   public void setPackageName(final String packageName) {
     this.packageName = packageName;
   }
 
-  public void setClassPrefix(final String classPrefix) {
-    this.classPrefix = classPrefix;
+  public void setPrefix(final String prefix) {
+    this.prefix = prefix;
   }
 
   public void setSchema(final CanvasDataSchema schema) {
@@ -31,12 +31,12 @@ public class TableVersion {
     return packageName;
   }
 
-  public String getClassPrefix() {
-    return classPrefix;
+  public String getPrefix() {
+    return prefix;
   }
 
-  public File getSourceDir() {
-    return sourceDir;
+  public File getSourceLocation() {
+    return sourceLocation;
   }
 
   public CanvasDataSchema getSchema() {
