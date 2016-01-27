@@ -27,4 +27,8 @@ public enum ReturnStatus {
   public String getDescription() {
     return description;
   }
+
+  public boolean isFailure() {
+    return code > NO_DATA.code;
+  }
 }

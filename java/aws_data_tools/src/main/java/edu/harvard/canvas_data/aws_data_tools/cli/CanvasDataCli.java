@@ -50,31 +50,47 @@ public class CanvasDataCli {
         log.fatal("Invalid configuration. Field", e);
         System.exit(ReturnStatus.CONFIG_ERROR.getCode());
       } catch (final IOException e) {
-        log.fatal("IO error: " + e.getMessage(), e);
+        log.fatal("IO error when reading configuration: " + e.getMessage(), e);
         System.exit(ReturnStatus.IO_ERROR.getCode());
       }
       try {
         final ReturnStatus status = parser.cmd.execute(config);
-        System.exit(status.getCode());
+        if (status.isFailure()) {
+          bail(status, args, config, "Task resulted in unexpected status code.");
+        }
       } catch (final IOException e) {
-        log.fatal("IO error: " + e.getMessage(), e);
-        System.exit(ReturnStatus.IO_ERROR.getCode());
+        log.fatal(e.getMessage(), e);
+        bail(ReturnStatus.IO_ERROR, args, config, "IO error: " + e.getMessage());
       } catch (final VerificationException e) {
-        log.fatal("Verification error: " + e.getMessage(), e);
-        System.exit(ReturnStatus.VERIFICATION_FAILURE.getCode());
+        log.fatal(e.getMessage(), e);
+        bail(ReturnStatus.VERIFICATION_FAILURE, args, config, "Verification error: " + e.getMessage());
       } catch (final IllegalArgumentException e) {
         log.fatal(e.getMessage(), e);
-        System.exit(ReturnStatus.ARGUMENT_ERROR.getCode());
+        bail(ReturnStatus.ARGUMENT_ERROR, args, config, e.getMessage());
       } catch (final UnexpectedApiResponseException e) {
-        log.fatal("API error: " + e.getMessage(), e);
-        System.exit(ReturnStatus.API_ERROR.getCode());
+        log.fatal(e.getMessage(), e);
+        bail(ReturnStatus.API_ERROR, args, config, "API error: " + e.getMessage());
       } catch (final FatalError e) {
-        log.fatal(e);
-        System.exit(e.getStatus().getCode());
+        log.fatal(e.getMessage(), e);
+        bail(e.getStatus(), args, config, e.getMessage());
       } catch (final Throwable t) {
-        log.fatal("Unexpected error: " + t.getMessage(), t);
-        System.exit(ReturnStatus.UNKNOWN_ERROR.ordinal());
+        log.fatal(t.getMessage(), t);
+        bail(ReturnStatus.UNKNOWN_ERROR, args, config, "Unexpected error: " + t.getMessage());
       }
     }
+  }
+
+  public static void bail(final ReturnStatus status, final String[] args, final DataConfiguration config, final String message) {
+    log.error("Exiting with error status " + status);
+    log.error(message);
+    log.error("Application was launched with arguments:");
+    for (final String arg : args) {
+      log.error("  " + arg);
+    }
+    log.error("Canvas data host: " + config.getCanvasDataHost());
+    log.error("DynamoDB dump info table: " + config.getDumpInfoDynamoTable());
+    log.error("Local scratch directory: " + config.getScratchDir());
+    log.error("S3 archive location: " + config.getCanvasDataArchiveKey());
+    System.exit(status.getCode());
   }
 }
