@@ -72,22 +72,9 @@ exports.handler = function(event, context) {
                             var fileKey;
                             if (fullObjectKey.indexOf("/") > -1) {
                                 directoryOfKey = fullObjectKey.substr(0, fullObjectKey.lastIndexOf("/"));
-                                fileKey = fullObjectKey.substr(fullObjectKey.lastIndexOf("/") + 1);
+                                fileKey = parseInt(fullObjectKey.substr(fullObjectKey.lastIndexOf("/") + 1), 10).toString();
                             }
 
-                            var tableToProcess = "";
-                            if (fullObjectKey.indexOf("course") > -1) {
-                                tableToProcess = "course";
-                            } else if (fullObjectKey.indexOf("account") > -1) {
-                                tableToProcess = "account";
-                            } else if (fullObjectKey.indexOf("user") > -1) {
-                                tableToProcess = "user";
-                            } else if (fullObjectKey.indexOf("requests") > -1) {
-                                tableToProcess = "requests";
-                            }
-
-                            var timestampedPipelineName = timeStampAsDate.getFullYear() + "-" + (1 + timeStampAsDate.getMonth()) + "-" + timeStampAsDate.getDate() + "-" + timeStampAsDate.getHours() + "-" + tableToProcess;
-                            var timestampedLocation = timeStampAsDate.getFullYear() + "/" + (1 + timeStampAsDate.getMonth()) + "/" + timeStampAsDate.getDate() + "/" + timeStampAsDate.getHours() + "/";
                             var params = {
                                 name: fileKey,
                                 uniqueId: fileKey
@@ -104,17 +91,17 @@ exports.handler = function(event, context) {
                                 } else {
                                     console.log('New pipeline id: ' + pipelineIdObject.pipelineId);
 
-                                    findAndReplaceStringValue(definition, "incoming-file-placeholder", directoryOfKey);
-                                    findAndReplaceStringValue(definition, "table-to-process", tableToProcess);
-                                    findAndReplaceStringValue(definition, "intermediate-folder-placeholder", timestampedLocation + directoryOfKey);
-                                    findAndReplaceStringValue(definition, "archival-file-placeholder", timestampedPipelineName);
+                                    findAndReplaceStringValue(definition, "dataset-path-placeholder", fullObjectKey);
+                                    // Run this again because dataset-path-placeholder is in our  MoveDatasetToArchives string twice!
+                                    findAndReplaceStringValue(definition, "dataset-path-placeholder", fullObjectKey);
+                                    findAndReplaceStringValue(definition, "dataset-id-placeholder", fileKey);
 
                                     // Place the modified pipeline definition into the
                                     // newly created pipeline and activate it.
 
                                     var params = {
                                             pipelineId: pipelineIdObject.pipelineId,
-                                            pipelineObjects: definition.pipelineObjects // (you can add parameter objects and values too)
+                                            pipelineObjects: definition.pipelineObjects, // (you can add parameter objects and values too)
                                             // parameterObjects: definition.parameterObjects, // need to remove these if they are empty, otherwise putPipelineDefinition fails
                                             // parameterValues: definition.parameterValues // need to remove these if they are empty, otherwise putPipelineDefinition fails
                                         } // Use definition from the getPipelineDefinition API result
@@ -158,8 +145,4 @@ exports.handler = function(event, context) {
             });
         }
     });
-
-
-
-
 };
