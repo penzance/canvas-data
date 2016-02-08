@@ -74,8 +74,8 @@
         },
         "S3toRedshiftLoaderParameter": {
             "Type": "String",
-            "Description": "Name of SQL file in the CodeS3Bucket containing the Redshift SQL code to move data from S3 to Redshift after Data Pipeline processing",
-            "Default": "s3toredshiftloader.sql"
+            "Description": "Prefix of the SQL file (up until the version number) in the CodeS3Bucket containing the Redshift SQL code to move data from S3 to Redshift after Data Pipeline processing",
+            "Default": "s3_to_redshift_loader"
         },
         "SuccessSNSEmailParameter": {
             "Type": "String",
@@ -849,8 +849,15 @@
                                 {
                                     "Ref": "CodeS3BucketParameter"
                                 },
-                                "/s3toredshiftloader.sql",
-                                " /root/.\n",
+                                "/",
+                                {
+                                    "Ref": "S3toRedshiftLoaderParameter"
+                                },
+                                "_",
+                                {
+                                    "Ref": "DownloadVerifyCanvasDataSchemaVersion"
+                                },
+                                ".sql /root/s3_to_redshift_loader.sql\n",
                                 "\n",
                                 "# Credit for the following grep magic goes to http://stackoverflow.com/a/20488535\n",
                                 "# Get the path to the data files in the intermediate S3 bucket, assign to env variable\n",
@@ -863,7 +870,7 @@
                                 {
                                     "Ref": "IntermediateS3Bucket"
                                 },
-                                "/$DATASETPATH@g\" /root/s3toredshiftloader.sql\n",
+                                "/$DATASETPATH@g\" /root/s3_to_redshift_loader.sql\n",
                                 "\n",
                                 "# Replace <awskeyandsecret> placeholder with real creds\n",
                                 "sed -i \"s@<awskeyandsecret>@aws_access_key_id=",
@@ -877,10 +884,10 @@
                                         "SecretAccessKey"
                                     ]
                                 },
-                                "@g\" /root/s3toredshiftloader.sql\n",
+                                "@g\" /root/s3_to_redshift_loader.sql\n",
                                 "\n",
                                 "# Copy modified file to code S3 bucket, name it with data set number.\n",
-                                "aws s3 cp /root/s3toredshiftloader.sql s3://",
+                                "aws s3 cp /root/s3_to_redshift_loader.sql s3://",
                                 {
                                     "Ref": "CodeS3BucketParameter"
                                 },
@@ -1831,6 +1838,151 @@
                         ]
                     },
                     {
+                        "Id": "RunCopyHiveQueryScript",
+                        "Name": "RunCopyHiveQueryScript",
+                        "Fields": [
+                            {
+                                "Key": "type",
+                                "StringValue": "HiveActivity"
+                            },
+                            {
+                                "Key": "runsOn",
+                                "RefValue": "EmrCluster"
+                            },
+                            {
+                                "Key": "schedule",
+                                "RefValue": "DefaultSchedule"
+                            },
+                            {
+                                "Key": "stage",
+                                "StringValue": "false"
+                            },
+                            {
+                                "Key": "dependsOn",
+                                "RefValue": "RunCreateHiveScript"
+                            },
+                            {
+                                "Key": "onSuccess",
+                                "RefValue": "SendCopyHiveSuccessSNSMessage"
+                            },
+                            {
+                                "Key": "onFail",
+                                "RefValue": "SendCopyHiveFailureSNSMessage"
+                            },
+                            {
+                                "Key": "scriptUri",
+                                "StringValue": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "s3://",
+                                            {
+                                                "Ref": "CodeS3BucketParameter"
+                                            },
+                                            "/",
+                                            {
+                                                "Ref": "HiveCopyScriptLocationParameter"
+                                            },
+                                            "_",
+                                            {
+                                                "Ref": "DownloadVerifyCanvasDataSchemaVersion"
+                                            },
+                                            ".q"
+                                        ]
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "Id": "SendCopyHiveSuccessSNSMessage",
+                        "Name": "SendCopyHiveSuccessSNSMessage",
+                        "Fields": [
+                            {
+                                "Key": "type",
+                                "StringValue": "SnsAlarm"
+                            },
+                            {
+                                "Key": "role",
+                                "StringValue": {
+                                    "Ref": "DataPipelineRole"
+                                }
+                            },
+                            {
+                                "Key": "subject",
+                                "StringValue": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            {
+                                                "Ref": "AWS::StackName"
+                                            },
+                                            "-",
+                                            {
+                                                "Ref": "EnvironmentParameter"
+                                            },
+                                            " Dataset dataset-id-placeholder - Copy script succeeded"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Key": "message",
+                                "StringValue": "Yay!"
+                            },
+                            {
+                                "Key": "topicArn",
+                                "StringValue": {
+                                    "Ref": "SuccessSNS"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "Id": "SendCopyHiveFailureSNSMessage",
+                        "Name": "SendCopyHiveFailureSNSMessage",
+                        "Fields": [
+                            {
+                                "Key": "type",
+                                "StringValue": "SnsAlarm"
+                            },
+                            {
+                                "Key": "role",
+                                "StringValue": {
+                                    "Ref": "DataPipelineRole"
+                                }
+                            },
+                            {
+                                "Key": "subject",
+                                "StringValue": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            {
+                                                "Ref": "AWS::StackName"
+                                            },
+                                            "-",
+                                            {
+                                                "Ref": "EnvironmentParameter"
+                                            },
+                                            " Dataset dataset-id-placeholder - Copy script failed"
+                                        ]
+                                    ]
+                                }
+                            },
+                            {
+                                "Key": "message",
+                                "StringValue": "Boo!"
+                            },
+                            {
+                                "Key": "topicArn",
+                                "StringValue": {
+                                    "Ref": "FailureSNS"
+                                }
+                            }
+                        ]
+                    },
+                    {
                         "Id": "RunHiveQueryScript",
                         "Name": "RunHiveQueryScript",
                         "Fields": [
@@ -2008,7 +2160,7 @@
                                             {
                                                 "Ref": "HadoopJARLocationParameter"
                                             },
-                                            ",edu.harvard.data.hadoop.requests.CanvasDataHadoop,/currentdataset,/output/currentdataset/phase1"
+                                            ",edu.harvard.data.hadoop.requests.CanvasDataHadoop,/currentdataset,/output/currentdataset"
                                         ]
                                     ]
                                 }
@@ -2117,7 +2269,7 @@
                                     "Fn::Join": [
                                         "",
                                         [
-                                            "s3-dist-cp --src=hdfs:///output/currentdataset/phase1 --dest=s3://",
+                                            "s3-dist-cp --src=hdfs:///output/currentdataset --dest=s3://",
                                             {
                                                 "Ref": "IntermediateS3Bucket"
                                             },
@@ -2133,6 +2285,10 @@
                             {
                                 "Key": "runsOn",
                                 "RefValue": "EmrCluster"
+                            },
+                            {
+                                "Key": "dependsOn",
+                                "RefValue": "RunCopyHiveQueryScript"
                             },
                             {
                                 "Key": "dependsOn",
