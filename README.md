@@ -1,4 +1,4 @@
-# canvas-data
+# canvas-data - DO NOT USE, instead go to https://github.com/penzance/harvard-data-tools
 
 ## Assumptions
 
